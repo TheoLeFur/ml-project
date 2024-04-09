@@ -5,11 +5,20 @@ import numpy as np
 from src.data import load_data
 from src.methods.dummy_methods import DummyClassifier
 from src.methods.logistic_regression import LogisticRegression
-from src.methods.linear_regression import LinearRegression 
+from src.methods.linear_regression import LinearRegression
 from src.methods.knn import KNN
 from src.utils import normalize_fn, append_bias_term, accuracy_fn, macrof1_fn, mse_fn
 import os
+import torch
+from typing import Dict
+
+device = "mps" if torch.backends.mps.is_available() else "cpu"
+
 np.random.seed(100)
+
+task_name_to_task_type: Dict = {"center_locating": "regression",
+                                "breed_identifying": "classification"
+                                }
 
 
 def main(args):
@@ -25,19 +34,21 @@ def main(args):
 
     ##EXTRACTED FEATURES DATASET
     if args.data_type == "features":
-        feature_data = np.load('features.npz',allow_pickle=True)
-        xtrain, xtest, ytrain, ytest, ctrain, ctest =feature_data['xtrain'],feature_data['xtest'],\
-        feature_data['ytrain'],feature_data['ytest'],feature_data['ctrain'],feature_data['ctest']
+        feature_data = np.load('data/ms1/features.npz', allow_pickle=True)
+        print(feature_data)
+        xtrain, xtest, ytrain, ytest, ctrain, ctest = feature_data['xtrain'], feature_data['xtest'], \
+            feature_data['ytrain'], feature_data['ytest'], feature_data['ctrain'], feature_data['ctest']
 
     ##ORIGINAL IMAGE DATASET (MS2)
     elif args.data_type == "original":
-        data_dir = os.path.join(args.data_path,'dog-small-64')
+        data_dir = os.path.join(args.data_path, 'dog-small-64')
         xtrain, xtest, ytrain, ytest, ctrain, ctest = load_data(data_dir)
+
+    else:
+        raise NotImplementedError
 
     ##TODO: ctrain and ctest are for regression task. (To be used for Linear Regression and KNN)
     ##TODO: xtrain, xtest, ytrain, ytest are for classification task. (To be used for Logistic Regression and KNN)
-
-
 
     ## 2. Then we must prepare it. This is were you can create a validation set,
     #  normalize, add bias, etc.
@@ -46,10 +57,8 @@ def main(args):
     if not args.test:
         ### WRITE YOUR CODE HERE
         pass
-    
-    ### WRITE YOUR CODE HERE to do any other data processing
 
-    
+    ### WRITE YOUR CODE HERE to do any other data processing
 
     ## 3. Initialize the method you want to use.
 
@@ -61,15 +70,17 @@ def main(args):
     if args.method == "dummy_classifier":
         method_obj = DummyClassifier(arg1=1, arg2=2)
 
-    elif ...:  ### WRITE YOUR CODE HERE
-        pass
-
+    elif args.method == "knn":
+        method_obj = KNN(args.K, task_kind=task_name_to_task_type[args.task])
+    else:
+        raise NotImplementedError
 
     ## 4. Train and evaluate the method
 
     if args.task == "center_locating":
         # Fit parameters on training data
         preds_train = method_obj.fit(xtrain, ctrain)
+
 
         # Perform inference for training and test data
         train_pred = method_obj.predict(xtrain)
@@ -82,7 +93,6 @@ def main(args):
         print(f"\nTrain loss = {train_loss:.3f}% - Test loss = {loss:.3f}")
 
     elif args.task == "breed_identifying":
-
         # Fit (:=train) the method on the training data for classification task
         preds_train = method_obj.fit(xtrain, ytrain)
 
@@ -108,15 +118,16 @@ if __name__ == '__main__':
     # If an argument is not given, it will take its default value as defined below.
     parser = argparse.ArgumentParser()
     parser.add_argument('--task', default="center_locating", type=str, help="center_locating / breed_identifying")
-    parser.add_argument('--method', default="dummy_classifier", type=str, help="dummy_classifier / knn / linear_regression/ logistic_regression / nn (MS2)")
+    parser.add_argument('--method', default="dummy_classifier", type=str,
+                        help="dummy_classifier / knn / linear_regression/ logistic_regression / nn (MS2)")
     parser.add_argument('--data_path', default="data", type=str, help="path to your dataset")
     parser.add_argument('--data_type', default="features", type=str, help="features/original(MS2)")
     parser.add_argument('--lmda', type=float, default=10, help="lambda of linear/ridge regression")
     parser.add_argument('--K', type=int, default=1, help="number of neighboring datapoints used for knn")
     parser.add_argument('--lr', type=float, default=1e-5, help="learning rate for methods with learning rate")
     parser.add_argument('--max_iters', type=int, default=100, help="max iters for methods which are iterative")
-    parser.add_argument('--test', action="store_true", help="train on whole training data and evaluate on the test data, otherwise use a validation set")
-
+    parser.add_argument('--test', action="store_true",
+                        help="train on whole training data and evaluate on the test data, otherwise use a validation set")
 
     # Feel free to add more arguments here if you need!
 

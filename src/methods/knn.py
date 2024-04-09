@@ -1,11 +1,8 @@
 import numpy as np
-from typing import Optional, Callable, Dict
+from typing import Optional, Callable
+from tqdm import tqdm
 
 KNNReduction = Callable[[np.ndarray], np.ndarray]
-str_to_reduction: Dict = {
-    "classification": np.mean,
-    "regression": lambda t: np.argmax(np.bincount(t))
-}
 
 
 class KNN(object):
@@ -13,18 +10,20 @@ class KNN(object):
         kNN classifier object.
     """
 
-    def __init__(self, k=1, task_kind="classification"):
+    def __init__(self, k: Optional[int] = 1, task_kind: Optional[str] = "classification"):
         """
             Call set_arguments function of this class.
         """
-        self.k = k
-        self.task_kind = task_kind
+
+        self.k: int = k
+        self.task_kind: str = task_kind
 
         self.training_data = None
         self.training_labels = None
 
     def fit(self, training_data, training_labels):
         """
+
             Trains the model, returns predicted labels for training data.
             Hint: Since KNN does not really have parameters to train, you can try saving the training_data
             and training_labels as part of the class. This way, when you call the "predict" function
@@ -38,8 +37,8 @@ class KNN(object):
                 pred_labels (np.array): labels of shape (N,)
         """
 
-        self.training_data = training_data
-        self.training_labels = training_labels
+        self.training_data: np.ndarray = training_data
+        self.training_labels: np.ndarray = training_labels
 
         return self.predict(training_data)
 
@@ -54,15 +53,47 @@ class KNN(object):
         """
 
         n_test: int = test_data.shape[0]
-        test_labels: np.ndarray = np.zeros(n_test)
+        if len(self.training_labels.shape) == 1:
+            test_labels: np.ndarray = np.empty((0, 1))
+        else: 
+            test_labels: np.ndarray = np.empty((0, *self.training_labels.shape[1:]))
 
-        for i in range(n_test):
-
+        for i in tqdm(range(n_test)):
             distances: np.ndarray = np.sqrt(np.sum(np.square(self.training_data - test_data[i]), axis=1))
             k_nearest_indices: np.ndarray = distances.argsort()[:self.k]
+
             nearest_k_labels: np.ndarray = self.training_labels[k_nearest_indices]
-            if isinstance(self.task_kind, str):
-                test_labels[i] = nearest_k_labels[self.task_kind]
+
+            if self.task_kind == "classification":
+                label: np.ndarray = self._compute_classification_label(nearest_k_labels)
+            elif self.task_kind == "regression":
+                label: np.ndarray = self._compute_regression_label(nearest_k_labels)
             else:
-                raise TypeError(f"task kind should be str")
-        return test_labels
+                raise NotImplementedError
+
+            test_labels = np.vstack([test_labels, label])
+        return np.squeeze(test_labels)
+
+    def _compute_classification_label(self, k_nearest_labels: np.ndarray) -> np.ndarray:
+        """
+
+        Args:
+            k_nearest_labels: Array that contains the k nearest labels of a given point
+
+        Returns: The label assigned to the point, assuming a classification label
+
+        """
+        return np.argmax(np.bincount(k_nearest_labels)).reshape(-1, 1)
+
+    def _compute_regression_label(self, k_nearest_labels: np.ndarray) -> np.ndarray:
+        """
+
+        Args:
+            k_nearest_labels: Array that contains the k nearest labels of a given point
+
+
+        Returns: The label assigned to the point, assuming a regression label
+:
+
+        """
+        return np.mean(k_nearest_labels, axis=0)
