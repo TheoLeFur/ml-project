@@ -55,7 +55,7 @@ class KNN(object):
         n_test: int = test_data.shape[0]
         if len(self.training_labels.shape) == 1:
             test_labels: np.ndarray = np.empty((0, 1))
-        else: 
+        else:
             test_labels: np.ndarray = np.empty((0, *self.training_labels.shape[1:]))
 
         for i in tqdm(range(n_test)):
