@@ -73,6 +73,8 @@ class Trainer(object):
             raise OptimizerNotSupported(f"optimizer {optimizer} not supported")
         self.device = device
 
+        self.model.to(self.device)
+
     def train_all(self, dataloader_train, dataloader_val):
         """
         Method to iterate over the epochs. In each epoch, it should call the functions
@@ -124,7 +126,6 @@ class Trainer(object):
             for inputs, _ in dataloader:
                 inputs = inputs.to(self.device)
                 logits: torch.Tensor = self.model(inputs)
-
                 _, class_predicted = torch.max(logits, 1)
                 results_class.extend(class_predicted.cpu().numpy())
         results_class = torch.tensor(results_class)
