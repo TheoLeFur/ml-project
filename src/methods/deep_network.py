@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from typing import Optional
+from tqdm import tqdm
 
 
 ## MS2!!
@@ -38,12 +39,24 @@ class SimpleNetwork(nn.Module):
         return output_class
 
 
+class OptimizerNotSupported(NotImplementedError):
+    pass
+
+
 class Trainer(object):
     """
         Trainer class for the deep network.
     """
 
-    def __init__(self, model, lr, epochs, beta=100, device: Optional[str] = "cpu"):
+    def __init__(
+            self,
+            model,
+            lr,
+            epochs,
+            beta=100,
+            device: Optional[str] = "cpu",
+            optimizer: Optional[str] = None
+    ):
         """
         """
         self.lr = lr
@@ -52,7 +65,12 @@ class Trainer(object):
         self.beta = beta
 
         self.classification_criterion = nn.CrossEntropyLoss()
-        self.optimizer = torch.optim.SGD(self.model.parameters(), lr=self.lr)
+        if optimizer is None:
+            self.optimizer = torch.optim.SGD(self.model.parameters(), lr=self.lr)
+        elif optimizer == "adam":
+            self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
+        else:
+            raise OptimizerNotSupported(f"optimizer {optimizer} not supported")
         self.device = device
 
     def train_all(self, dataloader_train, dataloader_val):
@@ -78,7 +96,8 @@ class Trainer(object):
         """
 
         self.model.train()
-        for batch_idx, (inputs, targets) in enumerate(dataloader):
+
+        for batch_idx, (inputs, targets) in tqdm(enumerate(dataloader)):
             inputs, targets = list(map(lambda x: x.to(self.device), [inputs, targets]))
             model_preds: torch.Tensor = self.model(inputs)
 
@@ -103,7 +122,6 @@ class Trainer(object):
         results_class = []
         with torch.no_grad():
             for inputs, _ in dataloader:
-
                 inputs = inputs.to(self.device)
                 logits: torch.Tensor = self.model(inputs)
 

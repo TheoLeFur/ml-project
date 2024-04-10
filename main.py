@@ -123,6 +123,7 @@ def main(args):
         axs[i].set_title(f'Feature {i + 1}')
         axs[i].set_xlabel('Image Index')
         axs[i].set_ylabel(f'Feature {i + 1} value')
+
     plt.tight_layout()
     plt.show()
 

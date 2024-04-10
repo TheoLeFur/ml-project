@@ -131,7 +131,7 @@ def macrof1_fn(pred_labels, gt_labels):
 
 
 def mse_fn(pred, gt):
-    '''
+    """
         Mean Squared Error
         Arguments:
             pred: NxD prediction matrix
@@ -139,7 +139,7 @@ def mse_fn(pred, gt):
         Returns:
             returns the computed loss
 
-    '''
+    """
     loss = (pred - gt) ** 2
     loss = np.mean(loss)
     return loss
