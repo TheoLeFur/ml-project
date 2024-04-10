@@ -1,8 +1,6 @@
 import numpy as np
-from typing import Optional, Callable
+from typing import Optional
 from tqdm import tqdm
-
-KNNReduction = Callable[[np.ndarray], np.ndarray]
 
 
 class KNN(object):
@@ -88,7 +86,6 @@ class KNN(object):
     @staticmethod
     def compute_regression_label(k_nearest_labels: np.ndarray) -> np.ndarray:
         """
-
         Args:
             k_nearest_labels: Array that contains the k nearest labels of a given point
 

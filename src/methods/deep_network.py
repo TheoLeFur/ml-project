@@ -98,10 +98,16 @@ class Trainer(object):
                 We return one torch tensor which we will use to save our results (for the competition!)
                 results_class (torch.tensor): classification results of shape (N,)
         """
-        ##
-        ###
-        #### YOUR CODE HERE!
-        ###
-        ##
 
+        self.model.eval()
+        results_class = []
+        with torch.no_grad():
+            for inputs, _ in dataloader:
+
+                inputs = inputs.to(self.device)
+                logits: torch.Tensor = self.model(inputs)
+
+                _, class_predicted = torch.max(logits, 1)
+                results_class.extend(class_predicted.cpu().numpy())
+        results_class = torch.tensor(results_class)
         return results_class
