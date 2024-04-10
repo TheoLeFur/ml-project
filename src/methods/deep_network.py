@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from typing import Optional
 
 
 ## MS2!!
@@ -16,6 +17,8 @@ class SimpleNetwork(nn.Module):
 
         self.fc1 = nn.Linear(input_size, hidden_size)
         self.fc2 = nn.Linear(hidden_size, num_classes)
+        self.softmax = nn.Softmax(dim=1)
+        self.relu = nn.ReLU()
 
     def forward(self, x):
         """
@@ -27,8 +30,10 @@ class SimpleNetwork(nn.Module):
             output_class (torch.tensor): shape (N, C) (logits)
         """
 
-        output = self.fc2(F.relu(self.fc1(x)))
-        output_class = F.log_softmax(output)
+        hidden: torch.Tensor = self.fc1(x)
+        hidden = self.relu(hidden)
+        hidden = self.fc2(hidden)
+        output_class: torch.Tensor = self.softmax(hidden)
 
         return output_class
 
@@ -38,7 +43,7 @@ class Trainer(object):
         Trainer class for the deep network.
     """
 
-    def __init__(self, model, lr, epochs, beta=100):
+    def __init__(self, model, lr, epochs, beta=100, device: Optional[str] = "cpu"):
         """
         """
         self.lr = lr
@@ -48,6 +53,7 @@ class Trainer(object):
 
         self.classification_criterion = nn.CrossEntropyLoss()
         self.optimizer = torch.optim.SGD(self.model.parameters(), lr=self.lr)
+        self.device = device
 
     def train_all(self, dataloader_train, dataloader_val):
         """
@@ -71,9 +77,15 @@ class Trainer(object):
         i.e. self.model.train()
         """
 
-        for batch_idx, batch in enumerate(dataloader):
-            self.model.train()
+        self.model.train()
+        for batch_idx, (inputs, targets) in enumerate(dataloader):
+            inputs, targets = list(map(lambda x: x.to(self.device), [inputs, targets]))
+            model_preds: torch.Tensor = self.model(inputs)
+
             self.optimizer.zero_grad()
+            loss: torch.Tensor = self.classification_criterion(model_preds, targets)
+            loss.backward()
+            self.optimizer.step()
 
     def eval(self, dataloader):
         """

@@ -7,18 +7,18 @@ from src.methods.dummy_methods import DummyClassifier
 from src.methods.logistic_regression import LogisticRegression
 from src.methods.linear_regression import LinearRegression
 from src.methods.knn import KNN
-from src.utils import normalize_fn, append_bias_term, accuracy_fn, macrof1_fn, mse_fn
+from src.utils import normalize_fn, append_bias_term, accuracy_fn, macrof1_fn, mse_fn, compute_std, compute_means
 import os
 import torch
 from typing import Dict
-
-device = "mps" if torch.backends.mps.is_available() else "cpu"
+import matplotlib.pyplot as plt
 
 np.random.seed(100)
 
 task_name_to_task_type: Dict = {"center_locating": "regression",
-                                "breed_identifying": "classification"
-                                }
+                                "breed_identifying": "classification"}
+# For GPU usage in the second part
+device = "mps" if torch.backends.mps.is_available() else "cpu"
 
 
 def main(args):
@@ -81,7 +81,6 @@ def main(args):
         # Fit parameters on training data
         preds_train = method_obj.fit(xtrain, ctrain)
 
-
         # Perform inference for training and test data
         train_pred = method_obj.predict(xtrain)
         preds = method_obj.predict(xtest)
@@ -111,6 +110,32 @@ def main(args):
         raise Exception("Invalid choice of task! Only support center_locating and breed_identifying!")
 
     ### WRITE YOUR CODE HERE if you want to add other outputs, visualization, etc.
+
+    data = xtrain
+    N = xtrain.shape[0]
+    n_features = xtrain.shape[1]
+
+    # Feature values plot
+    fig, axs = plt.subplots(5, 1, figsize=(8, 12))
+
+    for i in range(n_features):
+        axs[i].scatter(range(N), data[:, i])
+        axs[i].set_title(f'Feature {i + 1}')
+        axs[i].set_xlabel('Image Index')
+        axs[i].set_ylabel(f'Feature {i + 1} value')
+    plt.tight_layout()
+    plt.show()
+
+    # Feature distribution histogram
+    fig, axs = plt.subplots(n_features, 1, figsize=(8, 12))
+
+    for i in range(n_features):
+        axs[i].hist(data[:, i], bins=30)
+        axs[i].set_title(f'Feature {i + 1} Distribution')
+        axs[i].set_xlabel(f'Feature {i + 1} value')
+        axs[i].set_ylabel('Frequency')
+    plt.tight_layout()
+    plt.show()
 
 
 if __name__ == '__main__':

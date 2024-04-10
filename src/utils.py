@@ -50,6 +50,30 @@ def append_bias_term(data):
     return data
 
 
+def compute_means(data: np.ndarray) -> np.ndarray:
+    """
+
+    Args:
+        data: array of shape (N, D)
+
+    Returns:
+
+    """
+    return np.mean(data, axis=0)
+
+
+def compute_std(data: np.ndarray) -> np.ndarray:
+    """
+
+    Args:
+        data: array of shape (N, D)
+
+    Returns:
+
+    """
+    return np.std(data, axis=0)
+
+
 def normalize_fn(data, means, stds):
     """
     Return the normalized data, based on precomputed means and stds.
