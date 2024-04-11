@@ -7,6 +7,10 @@ from tqdm import tqdm
 
 ## MS2!!
 
+# ERRORS
+class OptimizerNotSupported(NotImplementedError):
+    pass
+
 
 class SimpleNetwork(nn.Module):
     """
@@ -37,10 +41,6 @@ class SimpleNetwork(nn.Module):
         output_class: torch.Tensor = self.softmax(hidden)
 
         return output_class
-
-
-class OptimizerNotSupported(NotImplementedError):
-    pass
 
 
 class Trainer(object):

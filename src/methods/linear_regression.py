@@ -1,6 +1,7 @@
 import numpy as np
 import sys
 
+
 class LinearRegression(object):
     """
         Linear regressor object. 
@@ -32,11 +33,10 @@ class LinearRegression(object):
 
         return pred_regression_targets
 
-
-def predict(self, test_data):
+    def predict(self, test_data):
         """
             Runs prediction on the test data.
-            
+
             Arguments:
                 test_data (np.array): test data of shape (N,D)
             Returns:
