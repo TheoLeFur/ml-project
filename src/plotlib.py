@@ -1,15 +1,17 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from typing import Optional
 
 
 class PlotLib:
 
     @staticmethod
-    def plot_feature_values(data: np.ndarray) -> None:
+    def plot_feature_values(data: np.ndarray, path: Optional[str] = None) -> None:
 
         """
         Scatter plot of the feature's values.
         Args:
+            path: Provide path and filename to save the plot, default to None
             data: Array of shape (N, D)
 
         Returns: None
@@ -29,14 +31,17 @@ class PlotLib:
             axs[i].set_ylabel(f'Feature {i + 1} value')
 
         plt.tight_layout()
+        if path is not None:
+            plt.savefig(path)
         plt.show()
 
     @staticmethod
-    def plot_feature_distribution(data: np.ndarray) -> None:
+    def plot_feature_distribution(data: np.ndarray, path: Optional[str] = None) -> None:
         """
         Distribution of the values of each feature.
 
         Args:
+            path: Provide path and filename to save the plot, default to None
             data: Array of shape (N, D)
 
         Returns: None
@@ -54,4 +59,8 @@ class PlotLib:
             axs[i].set_xlabel(f'Feature {i + 1} value')
             axs[i].set_ylabel('Frequency')
         plt.tight_layout()
+
+        if path is not None:
+            plt.savefig(path)
+
         plt.show()
