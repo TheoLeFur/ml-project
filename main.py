@@ -72,6 +72,8 @@ def main(args):
 
     elif args.method == "knn":
         method_obj = KNN(args.K, task_kind=task_name_to_task_type[args.task])
+    elif args.method == "logistic_regression":
+        method_obj = LogisticRegression(lr=args.lr, max_iters=args.max_iters)
     else:
         raise NotImplementedError
 
