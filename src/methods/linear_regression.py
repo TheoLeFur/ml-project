@@ -25,6 +25,7 @@ class LinearRegression(object):
             Returns:
                 pred_labels (np.array): target of shape (N,regression_target_size)
         """
+        print("training_data.shape", training_data.shape)
         ##
         ###
         #### YOUR CODE HERE!
