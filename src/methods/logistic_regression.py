@@ -32,27 +32,31 @@ class LogisticRegression(object):
         Returns:
             pred_labels (array): target of shape (N,)
         """
-        # get number of classes
+        # get number of classes i.e. number of unique labels
         num_classes = get_n_classes(training_labels)
-
-        # get number of features
+        print("num_classes: ", num_classes)
+        # get number of features i.e. number of parameters in training data
         num_features = training_data.shape[1]
-
+        print("num_features: ", num_features)
         # initialize weights
         self.weights = np.random.randn(num_classes, num_features)
 
-        # convert labels to one-hot
+        # convert labels to one-hot, shape (N, C) where C is the number of classes
         onehot_labels = label_to_onehot(training_labels, num_classes)
+
+        print(training_data.shape, onehot_labels.shape, self.weights.T.shape)
 
         # gradient descent
         for _ in range(self.max_iters):
             # compute gradients
             grad = self.gradient_logistic_multi(
-                training_data, onehot_labels, self.weights
+                training_data, onehot_labels, self.weights.T
             )
             # update weights
-            self.weights -= self.lr * grad
-
+            self.weights = self.weights - self.lr * grad.T
+        
+        print("grad shape: ", grad.shape)
+        print("weights: ", self.weights.shape)
         # return predictions
         pred_labels = self.logistic_regression_predict_multi(
             training_data, self.weights
@@ -71,21 +75,6 @@ class LogisticRegression(object):
         """
         pred_labels = self.logistic_regression_predict_multi(test_data, self.weights)
         return pred_labels
-
-    def loss_logistic_multi(self, data, labels, w):
-        """
-        Loss function for multi class logistic regression, i.e., multi-class entropy.
-
-        Args:
-            data (array): Input data of shape (N, D)
-            labels (array): Labels of shape  (N, C)  (in one-hot representation)
-            w (array): Weights of shape (D, C)
-        Returns:
-            float: Loss value
-        """
-        y_k = self.f_softmax(data, w)
-        loss = -np.sum(labels * np.log(y_k))
-        return loss
 
     def f_softmax(self, data, W):
         """
@@ -128,4 +117,4 @@ class LogisticRegression(object):
         Returns:
             array of shape (N,): Label predictions of data.
         """
-        return np.argmax(self.f_softmax(data, W), axis=1)
+        return np.argmax(self.f_softmax(data, W.T), axis=1)
