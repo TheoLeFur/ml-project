@@ -34,17 +34,12 @@ class LogisticRegression(object):
         """
         # get number of classes i.e. number of unique labels
         num_classes = get_n_classes(training_labels)
-        print("num_classes: ", num_classes)
         # get number of features i.e. number of parameters in training data
         num_features = training_data.shape[1]
-        print("num_features: ", num_features)
         # initialize weights
         self.weights = np.zeros((num_classes,num_features))
-
         # convert labels to one-hot, shape (N, C) where C is the number of classes
         onehot_labels = label_to_onehot(training_labels, num_classes)
-
-        print(training_data.shape, onehot_labels.shape, self.weights.T.shape)
 
         # gradient descent
         for _ in range(self.max_iters):
@@ -55,11 +50,8 @@ class LogisticRegression(object):
             # update weights
             self.weights = self.weights - self.lr * grad.T
         
-        print("grad shape: ", grad.shape)
-        print("weights: ", self.weights.shape)
         # return predictions
         pred_labels = self.logistic_regression_predict_multi(training_data, self.weights)
-        print("pred_labels: ", pred_labels)
         
         return pred_labels
 
