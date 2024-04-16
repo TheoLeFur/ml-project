@@ -12,6 +12,7 @@ import os
 import torch
 from typing import Dict
 import matplotlib.pyplot as plt
+from src.plotlib import PlotLib
 
 np.random.seed(100)
 
@@ -71,7 +72,11 @@ def main(args):
         method_obj = DummyClassifier(arg1=1, arg2=2)
 
     elif args.method == "knn":
-        method_obj = KNN(args.K, task_kind=task_name_to_task_type[args.task])
+        method_obj = KNN(args.K, task_kind=task_name_to_task_type[args.task], weights_type="inverse_distance")
+        ks: np.ndarray = np.arange(1, 10, 1)
+        params_list = []
+        for k in ks:
+            params_list.append(KNN.KNNHyperparameters(k=k))
     else:
         raise NotImplementedError
 
@@ -79,17 +84,18 @@ def main(args):
 
     if args.task == "center_locating":
         # Fit parameters on training data
-        preds_train = method_obj.fit(xtrain, ctrain)
 
+        preds_train = method_obj.fit(xtrain, ctrain)
         # Perform inference for training and test data
         train_pred = method_obj.predict(xtrain)
-        preds = method_obj.predict(xtest)
+        train_losses, test_losses, _, best_train_loss, best_test_loss = method_obj.predict_and_tune(xtrain, ctrain,
+                                                                                                    xtest, ctest,
+                                                                                                    params_list,
+                                                                                                    mse_fn)
 
-        ## Report results: performance on train and valid/test sets
-        train_loss = mse_fn(train_pred, ctrain)
-        loss = mse_fn(preds, ctest)
+        PlotLib.plot_loss_against_hyperparam_val(list(map(lambda t: t.k, params_list)), train_losses, test_losses)
+        print(f"\nTrain loss = {best_train_loss:.3f}% - Test loss = {best_test_loss:.3f}")
 
-        print(f"\nTrain loss = {train_loss:.3f}% - Test loss = {loss:.3f}")
 
     elif args.task == "breed_identifying":
         # Fit (:=train) the method on the training data for classification task
@@ -105,6 +111,7 @@ def main(args):
 
         acc = accuracy_fn(preds, ytest)
         macrof1 = macrof1_fn(preds, ytest)
+
         print(f"Test set:  accuracy = {acc:.3f}% - F1-score = {macrof1:.6f}")
     else:
         raise Exception("Invalid choice of task! Only support center_locating and breed_identifying!")
@@ -112,31 +119,10 @@ def main(args):
     ### WRITE YOUR CODE HERE if you want to add other outputs, visualization, etc.
 
     data = xtrain
-    N = xtrain.shape[0]
-    n_features = xtrain.shape[1]
-
-    # Feature values plot
-    fig, axs = plt.subplots(5, 1, figsize=(8, 12))
-
-    for i in range(n_features):
-        axs[i].scatter(range(N), data[:, i])
-        axs[i].set_title(f'Feature {i + 1}')
-        axs[i].set_xlabel('Image Index')
-        axs[i].set_ylabel(f'Feature {i + 1} value')
-
-    plt.tight_layout()
-    plt.show()
-
-    # Feature distribution histogram
-    fig, axs = plt.subplots(n_features, 1, figsize=(8, 12))
-
-    for i in range(n_features):
-        axs[i].hist(data[:, i], bins=30)
-        axs[i].set_title(f'Feature {i + 1} Distribution')
-        axs[i].set_xlabel(f'Feature {i + 1} value')
-        axs[i].set_ylabel('Frequency')
-    plt.tight_layout()
-    plt.show()
+    # Plot feature values:
+    PlotLib.plot_feature_values(data)
+    # Plot feature distribution
+    PlotLib.plot_feature_distribution(data)
 
 
 if __name__ == '__main__':

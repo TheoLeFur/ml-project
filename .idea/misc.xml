@@ -3,5 +3,5 @@
   <component name="Black">
     <option name="sdkName" value="$USER_HOME$/pytorch-test/env" />
   </component>
-  <component name="ProjectRootManager" version="2" project-jdk-name="dgm" project-jdk-type="Python SDK" />
+  <component name="ProjectRootManager" version="2" project-jdk-name="ml-project" project-jdk-type="Python SDK" />
 </project>
