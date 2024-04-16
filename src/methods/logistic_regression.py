@@ -39,7 +39,7 @@ class LogisticRegression(object):
         num_features = training_data.shape[1]
         print("num_features: ", num_features)
         # initialize weights
-        self.weights = np.random.randn(num_classes, num_features)
+        self.weights = np.zeros((num_classes,num_features))
 
         # convert labels to one-hot, shape (N, C) where C is the number of classes
         onehot_labels = label_to_onehot(training_labels, num_classes)
@@ -58,10 +58,9 @@ class LogisticRegression(object):
         print("grad shape: ", grad.shape)
         print("weights: ", self.weights.shape)
         # return predictions
-        pred_labels = self.logistic_regression_predict_multi(
-            training_data, self.weights
-        )
-
+        pred_labels = self.logistic_regression_predict_multi(training_data, self.weights)
+        print("pred_labels: ", pred_labels)
+        
         return pred_labels
 
     def predict(self, test_data):
