@@ -23,7 +23,6 @@ class BaseModel(metaclass=ABCMeta):
     def set_hyperparameters(self, params: "Hyperparameters"):
         raise NotImplementedError
 
-    @abstractmethod
     def predict_and_tune(
             self,
             train_data: np.ndarray,
@@ -68,14 +67,14 @@ class BaseModel(metaclass=ABCMeta):
                 min_value_train = train_loss
                 best_params = copy.deepcopy(param)
 
-        print(
-            f"The best params are: {best_params}."
-            f" \n They achieve score {min_value_train} on train data.")
-
         return train_losses, best_params, min_value_train
 
-    def predict_with_cv(self, train_data: np.ndarray, train_labels: np.ndarray, n_folds,
-                        criterion: Callable[[np.ndarray, np.ndarray], float]):
+    def predict_with_cv(
+            self,
+            train_data: np.ndarray,
+            train_labels: np.ndarray,
+            n_folds,
+            criterion: Callable[[np.ndarray, np.ndarray], float]):
 
         """
 
@@ -90,7 +89,6 @@ class BaseModel(metaclass=ABCMeta):
         """
 
         if n_folds == 1:
-            self.fit(train_data, train_labels)
             train_labels_pred = self.predict(train_data)
             acc = criterion(train_labels_pred, train_labels)
 

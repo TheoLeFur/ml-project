@@ -1,6 +1,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from typing import Optional, Sequence
+from src.methods.base_model import BaseModel
+from src.methods.knn import KNN
+from src.methods.logistic_regression import LogisticRegression
 
 
 class PlotLib:
@@ -65,7 +68,7 @@ class PlotLib:
         plt.show()
 
     @staticmethod
-    def plot_loss_against_hyperparam_val(param_grid: Sequence[float], loss_train: np.ndarray,
+    def plot_loss_against_hyperparam_val(param_grid: Sequence[BaseModel.Hyperparameters], loss_train: np.ndarray,
                                          path: Optional[str] = None) -> None:
         """
         Plots the training and testing loss against the hyperparameter values on the same figure.
@@ -78,6 +81,14 @@ class PlotLib:
         Returns:
             None
         """
+
+        if isinstance(param_grid[0], KNN.KNNHyperparameters):
+            param_grid = list(map(lambda t: t.k, param_grid))
+        elif isinstance(param_grid[0], LogisticRegression.LRHyperparameters):
+            param_grid = list(map(lambda t: t.lr, param_grid))
+        else:
+            raise NotImplementedError('Unknown hyperparameter instance')
+
         plt.plot(param_grid, loss_train, label='Training Loss')
         plt.xlabel('Hyperparameter Value')
         plt.ylabel('Loss')

@@ -1,12 +1,23 @@
+from dataclasses import dataclass
+
 import numpy as np
+from tqdm import tqdm
 
-from ..utils import get_n_classes, label_to_onehot, onehot_to_label
+from src.methods.base_model import BaseModel
+from ..utils import get_n_classes, label_to_onehot
 
 
-class LogisticRegression(object):
+class LogisticRegression(BaseModel):
     """
     Logistic regression classifier.
     """
+
+    @dataclass
+    class LRHyperparameters(BaseModel.Hyperparameters):
+        lr: float
+
+    def set_hyperparameters(self, params: "LRHyperparameters"):
+        self.lr = params.lr
 
     def __init__(self, lr, max_iters=500):
         """
@@ -37,22 +48,22 @@ class LogisticRegression(object):
         # get number of features i.e. number of parameters in training data
         num_features = training_data.shape[1]
         # initialize weights
-        self.weights = np.zeros((num_classes,num_features))
+        self.weights = np.zeros((num_classes, num_features))
         # convert labels to one-hot, shape (N, C) where C is the number of classes
         onehot_labels = label_to_onehot(training_labels, num_classes)
 
         # gradient descent
-        for _ in range(self.max_iters):
+        for _ in tqdm(range(self.max_iters)):
             # compute gradients
-            grad = self.gradient_logistic_multi(
+            grad = self._gradient_logistic_multi(
                 training_data, onehot_labels, self.weights.T
             )
             # update weights
             self.weights = self.weights - self.lr * grad.T
-        
+
         # return predictions
-        pred_labels = self.logistic_regression_predict_multi(training_data, self.weights)
-        
+        pred_labels = self._logistic_regression_predict_multi(training_data, self.weights)
+
         return pred_labels
 
     def predict(self, test_data):
@@ -64,10 +75,11 @@ class LogisticRegression(object):
         Returns:
             pred_labels (array): labels of shape (N,)
         """
-        pred_labels = self.logistic_regression_predict_multi(test_data, self.weights)
+        pred_labels = self._logistic_regression_predict_multi(test_data, self.weights)
         return pred_labels
 
-    def f_softmax(self, data, W):
+    @staticmethod
+    def f_softmax(data, W):
         """
         Softmax function for multi-class logistic regression.
 
@@ -83,7 +95,7 @@ class LogisticRegression(object):
         exp_z = np.exp(data @ W)
         return exp_z / np.sum(exp_z, axis=1, keepdims=True)
 
-    def gradient_logistic_multi(self, data, labels, W):
+    def _gradient_logistic_multi(self, data, labels, W):
         """
         Compute the gradient of the entropy for multi-class logistic regression.
 
@@ -98,7 +110,7 @@ class LogisticRegression(object):
         grad = data.T @ elem
         return grad
 
-    def logistic_regression_predict_multi(self, data, W):
+    def _logistic_regression_predict_multi(self, data, W):
         """
         Prediction the label of data for multi-class logistic regression.
 

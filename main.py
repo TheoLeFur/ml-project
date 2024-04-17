@@ -11,11 +11,9 @@ from src.utils import normalize_fn, append_bias_term, accuracy_fn, macrof1_fn, m
 import os
 import torch
 from typing import Dict
-import matplotlib.pyplot as plt
 from src.plotlib import PlotLib
 
 np.random.seed(100)
-
 task_name_to_task_type: Dict = {"center_locating": "regression",
                                 "breed_identifying": "classification"}
 
@@ -84,56 +82,111 @@ def main(args):
 
     elif args.method == "knn":
         method_obj = KNN(args.K, task_kind=task_name_to_task_type[args.task], weights_type="inverse_distance")
-        ks: np.ndarray = np.arange(args.Kmin, args.Kmax, 1)
-        params_list = []
-        for k in ks:
-            params_list.append(KNN.KNNHyperparameters(k=k))
 
+        if args.n_params > 1:
+            ks: np.ndarray = np.arange(args.Kmin, args.Kmax, 1)
+            params_list = []
+            for k in ks:
+                params_list.append(KNN.KNNHyperparameters(k=k))
+
+    elif args.method == "logistic_regression":
+
+        method_obj = LogisticRegression(lr=args.lr, max_iters=args.max_iters)
+        if args.n_params > 1:
+            lrs = np.linspace(args.lrmin, args.lrmax, args.n_params)
+            params_list = []
+            for lr in lrs:
+                params_list.append(LogisticRegression.LRHyperparameters(lr))
+    elif args.method == "linear_regression":
+
+        method_obj = LinearRegression(lmda=args.lmda)
+        if args.n_params > 1:
+            lambdas = np.linspace(args.lmdaMin, args.lmdaMax, args.n_params)
+            params_list = []
+            for lmda in lambdas:
+                params_list.append(LinearRegression.LRHyperparameters(lmda))
     else:
         raise NotImplementedError
 
     ## 4. Train and evaluate the method
     if args.task == "center_locating":
-        # Fit parameters on training data
-        train_losses, best_params, best_train_loss = method_obj.predict_and_tune(
-            xtrain,
-            ctrain,
-            params_list,
-            mse_fn,
-            n_folds=args.n_folds)
+        if args.n_params > 1:
+            # Fit parameters on training data
+            train_losses, best_params, best_train_loss = method_obj.predict_and_tune(
+                xtrain,
+                ctrain,
+                params_list,
+                mse_fn,
+                n_folds=args.n_folds)
 
-        PlotLib.plot_loss_against_hyperparam_val(list(map(lambda t: t.k, params_list)), train_losses)
+            PlotLib.plot_loss_against_hyperparam_val(params_list, train_losses)
 
-        # Evaluation on test set
-        method_obj.set_hyperparameters(best_params)
-        method_obj.fit(xtrain, ctrain)
-        test_labels = method_obj.predict(xtest)
-        best_test_loss = mse_fn(test_labels, ctest)
+            # Evaluation on test set
+            method_obj.set_hyperparameters(best_params)
+            method_obj.fit(xtrain, ctrain)
+            test_labels = method_obj.predict(xtest)
+            best_test_loss = mse_fn(test_labels, ctest)
 
-        print(f"\nTrain loss = {best_train_loss:.3f}% - Test loss = {best_test_loss:.3f}")
+            print(f"\nTrain loss = {best_train_loss:.3f}% - Test loss = {best_test_loss:.3f}")
+        else:
+
+            method_obj.fit(xtrain, ctrain)
+            train_loss = method_obj.predict_with_cv(
+                train_data=xtrain,
+                train_labels=ctrain,
+                n_folds=args.n_folds,
+                criterion=mse_fn
+            )
+
+            method_obj.fit(xtrain, ctrain)
+            test_labels = method_obj.predict(xtest)
+            test_loss = mse_fn(test_labels, ctest)
+
+            print(f"\nTrain loss = {train_loss:.3f}% - Test loss = {test_loss:.3f}")
 
     elif args.task == "breed_identifying":
         # Fit (:=train) the method on the training data for classification task. Since we measure hyperparameter
         # value in terms of the lowest loss, we take the opposite of the accuracy
-        train_losses, best_params, best_train_loss = method_obj.predict_and_tune(
-            xtrain,
-            ytrain,
-            params_list,
-            lambda t, s: -accuracy_fn(t, s),
-            n_folds=args.n_folds
-        )
+        if args.n_params > 1:
+            train_losses, best_params, best_train_loss = method_obj.predict_and_tune(
+                xtrain,
+                ytrain,
+                params_list,
+                lambda t, s: -accuracy_fn(t, s),
+                n_folds=args.n_folds
+            )
 
-        print(f"\nTrain set: accuracy = {-best_train_loss:.3f}%")
+            print(f"\nTrain set: accuracy = {-best_train_loss:.3f}%")
 
-        method_obj.set_hyperparameters(best_params)
-        method_obj.fit(xtrain, ytrain)
+            method_obj.set_hyperparameters(best_params)
+            method_obj.fit(xtrain, ytrain)
 
-        preds = method_obj.predict(xtest)
-        acc = accuracy_fn(preds, ytest)
-        macrof1 = macrof1_fn(preds, ytest)
+            preds = method_obj.predict(xtest)
+            acc = accuracy_fn(preds, ytest)
+            macrof1 = macrof1_fn(preds, ytest)
 
-        print(f"Test set:  accuracy = {acc:.3f}% - F1-score = {macrof1:.6f}")
-        PlotLib.plot_loss_against_hyperparam_val(list(map(lambda t: t.k, params_list)), train_losses)
+            print(f"Test set:  accuracy = {acc:.3f}% - F1-score = {macrof1:.6f}")
+            PlotLib.plot_loss_against_hyperparam_val(params_list, train_losses)
+        else:
+
+            method_obj.fit(xtrain, ytrain)
+            train_accuracy = method_obj.predict_with_cv(
+                train_data=xtrain,
+                train_labels=ytrain,
+                n_folds=args.n_folds,
+                criterion=accuracy_fn
+            )
+
+            method_obj.fit(xtrain, ytrain)
+            test_labels = method_obj.predict(xtest)
+            test_acccuracy = accuracy_fn(test_labels, ytest)
+            test_f1_score = macrof1_fn(test_labels, ytest)
+
+            # TODO: find a way to compute f1 score for training labels
+            print(f"Train set:  accuracy = {train_accuracy:.3f}% - F1-score = ")
+            print(f"Test set:  accuracy = {test_acccuracy:.3f}% - F1-score = {test_f1_score:.6f}")
+
+
     else:
         raise Exception("Invalid choice of task! Only support center_locating and breed_identifying!")
 
@@ -160,18 +213,20 @@ if __name__ == '__main__':
     parser.add_argument('--lr', type=float, default=1e-5, help="learning rate for methods with learning rate")
     parser.add_argument('--max_iters', type=int, default=100, help="max iters for methods which are iterative")
     parser.add_argument('--test', action="store_true",
-                        help="train on whole training data and evaluate on the test data, otherwise use a validation set")
+                        help="train on whole training data and evaluate on the test data, otherwise use a validation "
+                             "set")
 
     # For hyperparameter search
     parser.add_argument('--Kmin', type=int, default=1, help="Minimum number of neighboring datapoints used for knn")
     parser.add_argument('--Kmax', type=int, default=1, help="Maximum number of neighboring datapoints used for knn")
     parser.add_argument('--lmdaMin', type=float, default=10, help="minimum lambda of linear/ridge regression")
     parser.add_argument('--lmdaMax', type=float, default=10, help="maximum lambda of linear/ridge regression")
-    parser.add_argument('--lrmin', type=float, default=10, help='minimum learning rate')
-    parser.add_argument('--lrmax', type=float, default=10, help='maximum learning rate')
+    parser.add_argument('--lrmin', type=float, default=1e-2, help='minimum learning rate')
+    parser.add_argument('--lrmax', type=float, default=1e-2, help='maximum learning rate')
 
     parser.add_argument('--n_folds', type=int, default=1, help="number of folds to use in cross validation")
-
+    parser.add_argument('--n_params', type=int, default=1, help='number of hyperparameters to search for. '
+                                                                'When equal to 1, we do no hyperparameters search')
     # Feel free to add more arguments here if you need!
     # MS2 arguments
     parser.add_argument('--nn_type', default="cnn", help="which network to use, can be 'Transformer' or 'cnn'")
