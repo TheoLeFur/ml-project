@@ -1,5 +1,6 @@
 import numpy as np
 import sys
+from ..utils import append_bias_term
 
 
 class LinearRegression(object):
@@ -15,6 +16,7 @@ class LinearRegression(object):
             and call set_arguments function of this class.
         """
         self.lmda = lmda
+        self.weight = None
 
     def fit(self, training_data, training_labels):
         """
@@ -25,14 +27,21 @@ class LinearRegression(object):
             Returns:
                 pred_labels (np.array): target of shape (N,regression_target_size)
         """
-        print("training_data.shape", training_data.shape)
-        ##
-        ###
-        #### YOUR CODE HERE!
-        ###
-        ##
+        # Append a bias term to the training data
+        training_data_bias = append_bias_term(training_data)
 
+        # Regularization matrix, excluding the bias term from regularization
+        reg_matrix = self.lmda * np.eye(training_data_bias.shape[1])
+        reg_matrix[-1, -1] = 0  # Do not regularize the bias term
+
+        # Closed-form solution for weight calculation
+        self.weights = np.linalg.inv(training_data_bias.T @ training_data_bias + reg_matrix) @ training_data_bias.T @ training_labels
+        print(self.weights)
+        print(self.weights.shape)
+        # Return predictions for the training data to verify the fit
+        pred_regression_targets = training_data_bias.dot(self.weights)
         return pred_regression_targets
+        
 
     def predict(self, test_data):
         """
@@ -43,10 +52,12 @@ class LinearRegression(object):
             Returns:
                 test_labels (np.array): labels of shape (N,regression_target_size)
         """
-        ##
-        ###
-        #### YOUR CODE HERE!
-        ###
-        ##
+       # Append a bias term to the test data
+        test_data_bias = append_bias_term(test_data)
+
+        # Predict using the learned weights
+        pred_regression_targets = test_data_bias.dot(self.weights)
 
         return pred_regression_targets
+    
+        

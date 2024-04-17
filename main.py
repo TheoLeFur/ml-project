@@ -38,6 +38,7 @@ def main(args):
         print(feature_data)
         xtrain, xtest, ytrain, ytest, ctrain, ctest = feature_data['xtrain'], feature_data['xtest'], \
             feature_data['ytrain'], feature_data['ytest'], feature_data['ctrain'], feature_data['ctest']
+        print(xtrain.shape, xtest.shape, ctrain.shape, ctest.shape)
 
     ##ORIGINAL IMAGE DATASET (MS2)
     elif args.data_type == "original":
@@ -72,6 +73,8 @@ def main(args):
 
     elif args.method == "knn":
         method_obj = KNN(args.K, task_kind=task_name_to_task_type[args.task])
+    elif args.method == "linear_regression":
+        method_obj = LinearRegression(lmda=args.lmda)
     else:
         raise NotImplementedError
 
