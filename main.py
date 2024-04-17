@@ -133,9 +133,8 @@ def main(args):
         else:
 
             method_obj.fit(xtrain, ctrain)
-            train_loss = method_obj.predict_with_cv(train_data=xtrain, train_labels=ctrain, n_folds=args.n_folds,
-                                                    criterion=mse_fn)
-
+            train_loss, _ = method_obj.predict_with_cv(train_data=xtrain, train_labels=ctrain, n_folds=args.n_folds,
+                                                       criterion=mse_fn)
             method_obj.fit(xtrain, ctrain)
             test_labels = method_obj.predict(xtest)
             test_loss = mse_fn(test_labels, ctest)
@@ -170,7 +169,7 @@ def main(args):
 
             print(f"Test set:  accuracy = {acc:.3f}% - F1-score = {macrof1:.6f}")
             PlotLib.plot_loss_against_hyperparam_val(params_list, train_losses)
-            
+
         else:
 
             method_obj.fit(xtrain, ytrain)
