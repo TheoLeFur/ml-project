@@ -30,7 +30,7 @@ class BaseModel(metaclass=ABCMeta):
             ground_truth_train_labels: np.ndarray,
             params: List["Hyperparameters"],
             eval_criterion: Callable[[np.ndarray, np.ndarray], float],
-            metrics: Dict[str, Callable[[np.ndarray, np.ndarray], float]],
+            metrics: Optional[Dict[str, Callable[[np.ndarray, np.ndarray], float]]] = None,
             n_folds: Optional[int] = 1
     ) \
             -> Tuple[List[float], "Hyperparameters", float, Dict[str, float]]:
@@ -51,34 +51,37 @@ class BaseModel(metaclass=ABCMeta):
         """
         min_value_train: float = np.Inf
         best_params: BaseModel.Hyperparameters = None
-        best_metrics: Dict[str, float] = {}
+        best_logs: Dict[str, float] = {}
         train_losses: List = []
 
         for param in params:
             self.set_hyperparameters(param)
 
-            train_loss, metrics = self.predict_with_cv(train_data=train_data, train_labels=ground_truth_train_labels,
-                                                       n_folds=n_folds, criterion=eval_criterion, metrics=metrics)
-
+            train_loss, logs = self.predict_with_cv(train_data=train_data, train_labels=ground_truth_train_labels,
+                                                    n_folds=n_folds, criterion=eval_criterion, metrics=metrics)
             train_losses.append(train_loss)
-
             if train_loss < min_value_train:
-                best_metrics = metrics
+                best_logs = copy.deepcopy(logs)
                 min_value_train = train_loss
                 best_params = copy.deepcopy(param)
 
-        return train_losses, best_params, min_value_train, best_metrics
+        return train_losses, best_params, min_value_train, best_logs
 
-    def predict_with_cv(self, train_data: np.ndarray, train_labels: np.ndarray, n_folds,
-                        criterion: Callable[[np.ndarray, np.ndarray], float],
-                        metrics: Dict[str, Callable[[np.ndarray, np.ndarray], float]]) -> Tuple[
+    def predict_with_cv(
+            self,
+            train_data: np.ndarray,
+            train_labels: np.ndarray,
+            n_folds,
+            criterion: Callable[[np.ndarray, np.ndarray], float],
+            metrics: Optional[Dict[str, Callable[[np.ndarray, np.ndarray], float]]] = None) -> Tuple[
         float, Dict[str, float]]:
 
         """
 
         Args:
-            metrics:
-            criterion:
+            metrics: A dictionary containing additional metrics on may want to apply during CV. A metric takes the
+            form f: (dataset, labels) -> float
+            criterion: Main criterion that will be used to perform hyperparameter selection
             train_data: training data, of shape (N,D)
             train_labels: training labels, of shape (N, C), where C is the number of features in labels
             n_folds: Number of folds to apply in CV
@@ -91,21 +94,25 @@ class BaseModel(metaclass=ABCMeta):
 
         if n_folds == 1:
 
-            for key in metrics.keys():
-                logs[key] = 0
+            if metrics is not None:
+                for key in metrics.keys():
+                    logs[key] = 0
 
             train_labels_pred = self.predict(train_data)
             acc = criterion(train_labels_pred, train_labels)
 
-            for key in metrics.keys():
-                metric: Callable[[np.ndarray, np.ndarray], float] = metrics[key]
-                val = metric(train_labels_pred, train_labels)
-                logs[key] = val
+            if metrics is not None:
+                for key in metrics.keys():
+                    metric: Callable[[np.ndarray, np.ndarray], float] = metrics[key]
+                    val = metric(train_labels_pred, train_labels)
+                    logs[key] = val
             return acc, logs
 
         else:
-            for key in metrics.keys():
-                logs[key] = np.zeros(n_folds, dtype=np.float64)
+
+            if metrics is not None:
+                for key in metrics.keys():
+                    logs[key] = np.zeros(n_folds, dtype=np.float64)
 
             N = train_data.shape[0]
             accuracies: List[float] = []
@@ -129,21 +136,21 @@ class BaseModel(metaclass=ABCMeta):
 
                 self.fit(x_train_fold, y_train_fold)
                 val_pred_labels = self.predict(x_val_fold)
-
                 acc = criterion(val_pred_labels, y_val_fold)
-
                 accuracies.append(acc)
-                for key in metrics.keys():
-                    metric: Callable[[np.ndarray, np.ndarray], float] = metrics[key]
-                    val = metric(val_pred_labels, y_val_fold)
-                    logs[key][i] = val
 
-            return np.mean(accuracies), self.reduce_mean(logs)
+                if metrics is not None:
+                    for key in metrics.keys():
+                        metric: Callable[[np.ndarray, np.ndarray], float] = metrics[key]
+                        val = metric(val_pred_labels, y_val_fold)
+                        logs[key][i] = val
+
+            return np.mean(accuracies), self.reduce_mean(copy.deepcopy(logs))
 
     @staticmethod
     def reduce_mean(hashmap: Dict[str, np.ndarray]) -> Dict[str, float]:
         reduced: Dict[str, float] = {}
-        for key in hashmap.keys():
-            reduced[key] = np.mean(hashmap[key])
-
+        if len(hashmap) > 0:
+            for key in hashmap.keys():
+                reduced[key] = np.mean(hashmap[key])
         return reduced

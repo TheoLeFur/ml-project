@@ -112,7 +112,7 @@ def main(args):
     if args.task == "center_locating":
         if args.n_params > 1:
             # Fit parameters on training data
-            train_losses, best_params, best_train_loss = method_obj.predict_and_tune(
+            train_losses, best_params, best_train_loss, _ = method_obj.predict_and_tune(
                 xtrain,
                 ctrain,
                 params_list,
@@ -132,7 +132,7 @@ def main(args):
 
             method_obj.fit(xtrain, ctrain)
             train_loss = method_obj.predict_with_cv(train_data=xtrain, train_labels=ctrain, n_folds=args.n_folds,
-                                                    criterion=mse_fn, metrics=0)
+                                                    criterion=mse_fn)
 
             method_obj.fit(xtrain, ctrain)
             test_labels = method_obj.predict(xtest)
@@ -143,16 +143,21 @@ def main(args):
     elif args.task == "breed_identifying":
         # Fit (:=train) the method on the training data for classification task. Since we measure hyperparameter
         # value in terms of the lowest loss, we take the opposite of the accuracy
+
+        metrics = {"macro-f1": macrof1_fn}
         if args.n_params > 1:
-            train_losses, best_params, best_train_loss = method_obj.predict_and_tune(
+            train_losses, best_params, best_train_loss, logs = method_obj.predict_and_tune(
                 xtrain,
                 ytrain,
                 params_list,
                 lambda t, s: -accuracy_fn(t, s),
-                n_folds=args.n_folds
+                n_folds=args.n_folds,
+                metrics=metrics
             )
 
-            print(f"\nTrain set: accuracy = {-best_train_loss:.3f}%")
+            macrof1 = logs["macro-f1"]
+
+            print(f"\nTrain set: accuracy = {-best_train_loss:.3f}% -F1 = {macrof1:.6f}")
 
             method_obj.set_hyperparameters(best_params)
             method_obj.fit(xtrain, ytrain)
@@ -166,16 +171,17 @@ def main(args):
         else:
 
             method_obj.fit(xtrain, ytrain)
-            train_accuracy = method_obj.predict_with_cv(train_data=xtrain, train_labels=ytrain, n_folds=args.n_folds,
-                                                        criterion=accuracy_fn, metrics=0)
+            train_accuracy, logs = method_obj.predict_with_cv(train_data=xtrain, train_labels=ytrain, n_folds=args.n_folds,
+                                                        criterion=accuracy_fn, metrics=metrics)
 
             method_obj.fit(xtrain, ytrain)
             test_labels = method_obj.predict(xtest)
             test_acccuracy = accuracy_fn(test_labels, ytest)
             test_f1_score = macrof1_fn(test_labels, ytest)
+            train_f1_score = logs['macro-f1']
 
             # TODO: find a way to compute f1 score for training labels
-            print(f"Train set:  accuracy = {train_accuracy:.3f}% - F1-score = ")
+            print(f"Train set:  accuracy = {train_accuracy:.3f}% - F1-score = {train_f1_score}.6f")
             print(f"Test set:  accuracy = {test_acccuracy:.3f}% - F1-score = {test_f1_score:.6f}")
 
 

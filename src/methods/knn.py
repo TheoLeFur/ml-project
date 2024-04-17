@@ -27,12 +27,15 @@ class KNN(BaseModel):
             ground_truth_train_labels: np.ndarray,
             params: List["KNNHyperparameters"],
             eval_criterion: Callable[[np.ndarray, np.ndarray], float],
-            n_folds: Optional[int] = 1) -> \
+            metrics: Optional[Dict[str, Callable[[np.ndarray, np.ndarray], float]]] = None,
+            n_folds: Optional[int] = 1
+    ) -> \
             Tuple[
-                List[float], "KNNHyperparameters", float]:
+                List[float], "KNNHyperparameters", float, Dict[str, float]]:
         """
         @inheritdoc from BaseModel
         Args:
+            metrics:
             n_folds:
             train_data:
             ground_truth_train_labels:
@@ -48,6 +51,7 @@ class KNN(BaseModel):
             ground_truth_train_labels,
             params,
             eval_criterion,
+            metrics,
             n_folds=n_folds
         )
 
