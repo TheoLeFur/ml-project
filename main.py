@@ -131,12 +131,8 @@ def main(args):
         else:
 
             method_obj.fit(xtrain, ctrain)
-            train_loss = method_obj.predict_with_cv(
-                train_data=xtrain,
-                train_labels=ctrain,
-                n_folds=args.n_folds,
-                criterion=mse_fn
-            )
+            train_loss = method_obj.predict_with_cv(train_data=xtrain, train_labels=ctrain, n_folds=args.n_folds,
+                                                    criterion=mse_fn, metrics=0)
 
             method_obj.fit(xtrain, ctrain)
             test_labels = method_obj.predict(xtest)
@@ -170,12 +166,8 @@ def main(args):
         else:
 
             method_obj.fit(xtrain, ytrain)
-            train_accuracy = method_obj.predict_with_cv(
-                train_data=xtrain,
-                train_labels=ytrain,
-                n_folds=args.n_folds,
-                criterion=accuracy_fn
-            )
+            train_accuracy = method_obj.predict_with_cv(train_data=xtrain, train_labels=ytrain, n_folds=args.n_folds,
+                                                        criterion=accuracy_fn, metrics=0)
 
             method_obj.fit(xtrain, ytrain)
             test_labels = method_obj.predict(xtest)
