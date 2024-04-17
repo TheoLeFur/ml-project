@@ -13,7 +13,7 @@ git clone https://github.com/TheoLeFur/ml-project.git
 <p> Create a virtual environment. For example, using Conda, write:</p>
 
 ```angular2html
-conda create -n ml-project
+conda create -n ml-project python==3.11
 ```
 
 <p> Then activate your environment using: </p>
@@ -29,6 +29,8 @@ pip3 install -r requirements.txt
 ```
 
 <p>from the<code>ml-project</code> directory</p>
+
+
 
 
 

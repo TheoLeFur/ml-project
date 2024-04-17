@@ -1,14 +1,23 @@
 import numpy as np
 import sys
 from ..utils import append_bias_term
+from src.methods.base_model import BaseModel
+from dataclasses import dataclass
 
 
-class LinearRegression(object):
+class LinearRegression(BaseModel):
     """
         Linear regressor object. 
         Note: This class will implement BOTH linear regression and ridge regression.
         Recall that linear regression is just ridge regression with lambda=0.
     """
+
+    @dataclass
+    class LRHyperparameters(BaseModel.Hyperparameters):
+        lmda: float
+
+    def set_hyperparameters(self, params: "LRHyperparameters"):
+        self.lmda = params.lmda
 
     def __init__(self, lmda):
         """
