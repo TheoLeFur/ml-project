@@ -25,7 +25,7 @@ class LinearRegression(BaseModel):
             and call set_arguments function of this class.
         """
         self.lmda = lmda
-        self.weight = None
+        self.weights = None
 
     def fit(self, training_data, training_labels):
         """
@@ -46,8 +46,6 @@ class LinearRegression(BaseModel):
         # Closed-form solution for weight calculation
         self.weights = np.linalg.inv(
             training_data_bias.T @ training_data_bias + reg_matrix) @ training_data_bias.T @ training_labels
-        print(self.weights)
-        print(self.weights.shape)
         # Return predictions for the training data to verify the fit
         pred_regression_targets = training_data_bias.dot(self.weights)
         return pred_regression_targets

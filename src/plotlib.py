@@ -4,7 +4,7 @@ from typing import Optional, Sequence
 from src.methods.base_model import BaseModel
 from src.methods.knn import KNN
 from src.methods.logistic_regression import LogisticRegression
-
+from src.methods.linear_regression import LinearRegression
 
 class PlotLib:
 
@@ -86,6 +86,8 @@ class PlotLib:
             param_grid = list(map(lambda t: t.k, param_grid))
         elif isinstance(param_grid[0], LogisticRegression.LRHyperparameters):
             param_grid = list(map(lambda t: t.lr, param_grid))
+        elif isinstance(param_grid[0], LinearRegression.LRHyperparameters):
+            param_grid = list(map(lambda t: t.lmda, param_grid))
         else:
             raise NotImplementedError('Unknown hyperparameter instance')
 

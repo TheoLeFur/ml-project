@@ -21,40 +21,6 @@ class KNN(BaseModel):
     def set_hyperparameters(self, params: "KNNHyperparameters"):
         self.k = params.k
 
-    def predict_and_tune(
-            self,
-            train_data: np.ndarray,
-            ground_truth_train_labels: np.ndarray,
-            params: List["KNNHyperparameters"],
-            eval_criterion: Callable[[np.ndarray, np.ndarray], float],
-            metrics: Optional[Dict[str, Callable[[np.ndarray, np.ndarray], float]]] = None,
-            n_folds: Optional[int] = 1
-    ) -> \
-            Tuple[
-                List[float], "KNNHyperparameters", float, Dict[str, float]]:
-        """
-        @inheritdoc from BaseModel
-        Args:
-            metrics:
-            n_folds:
-            train_data:
-            ground_truth_train_labels:
-            params:
-            eval_criterion:
-
-        Returns:
-
-        """
-
-        return super().predict_and_tune(
-            train_data,
-            ground_truth_train_labels,
-            params,
-            eval_criterion,
-            metrics,
-            n_folds=n_folds
-        )
-
     def __init__(
             self,
             k: Optional[int] = 1,
@@ -62,9 +28,12 @@ class KNN(BaseModel):
             weights_type: Optional[str] = None
     ):
         """
-            Call set_arguments function of this class.
-        """
 
+        Args:
+            k: Number of neighbors used in KNN
+            task_kind: classification or regression, defaulted to classification
+            weights_type: type of weights to use in distance computation, might be uniform or inverse_distance
+        """
         self.k: int = k
         self.task_kind: str = task_kind
         self.training_data = None
