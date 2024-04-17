@@ -21,19 +21,21 @@ class KNN(BaseModel):
     def set_hyperparameters(self, params: "KNNHyperparameters"):
         self.k = params.k
 
-    def predict_and_tune(self, train_data: np.ndarray, ground_truth_train_labels: np.ndarray, test_data: np.ndarray,
-                         ground_truth_test_labels: np.ndarray,
-                         params: List["KNNHyperparameters"],
-                         eval_criterion: Callable[[np.ndarray, np.ndarray], float]) -> \
+    def predict_and_tune(
+            self,
+            train_data: np.ndarray,
+            ground_truth_train_labels: np.ndarray,
+            params: List["KNNHyperparameters"],
+            eval_criterion: Callable[[np.ndarray, np.ndarray], float],
+            n_folds: Optional[int] = 1) -> \
             Tuple[
-                List[float], List[float], "KNNHyperparameters", float, float]:
+                List[float], "KNNHyperparameters", float]:
         """
         @inheritdoc from BaseModel
         Args:
+            n_folds:
             train_data:
             ground_truth_train_labels:
-            test_data:
-            ground_truth_test_labels:
             params:
             eval_criterion:
 
@@ -44,10 +46,9 @@ class KNN(BaseModel):
         return super().predict_and_tune(
             train_data,
             ground_truth_train_labels,
-            test_data,
-            ground_truth_test_labels,
             params,
-            eval_criterion
+            eval_criterion,
+            n_folds=n_folds
         )
 
     def __init__(

@@ -65,7 +65,7 @@ class PlotLib:
         plt.show()
 
     @staticmethod
-    def plot_loss_against_hyperparam_val(param_grid: Sequence[float], loss_train: np.ndarray, loss_test: np.ndarray,
+    def plot_loss_against_hyperparam_val(param_grid: Sequence[float], loss_train: np.ndarray,
                                          path: Optional[str] = None) -> None:
         """
         Plots the training and testing loss against the hyperparameter values on the same figure.
@@ -74,13 +74,11 @@ class PlotLib:
             path: Path to file where we want to save the plot, defaulted to None
             param_grid: Sequence of hyperparameter values.
             loss_train: Numpy array containing training loss values.
-            loss_test: Numpy array containing testing loss values.
 
         Returns:
             None
         """
         plt.plot(param_grid, loss_train, label='Training Loss')
-        plt.plot(param_grid, loss_test, label='Testing Loss')
         plt.xlabel('Hyperparameter Value')
         plt.ylabel('Loss')
         plt.title('Loss vs. Hyperparameter Value')

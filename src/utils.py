@@ -59,7 +59,7 @@ def compute_means(data: np.ndarray) -> np.ndarray:
     Returns:
 
     """
-    return np.mean(data, axis=0)
+    return np.mean(data, axis=0, keepdims=True)
 
 
 def compute_std(data: np.ndarray) -> np.ndarray:
@@ -68,10 +68,10 @@ def compute_std(data: np.ndarray) -> np.ndarray:
     Args:
         data: array of shape (N, D)
 
-    Returns:
+    Returns: array of shape (N,)
 
     """
-    return np.std(data, axis=0)
+    return np.std(data, axis=0, keepdims=True)
 
 
 def normalize_fn(data, means, stds):
@@ -143,3 +143,5 @@ def mse_fn(pred, gt):
     loss = (pred - gt) ** 2
     loss = np.mean(loss)
     return loss
+
+
