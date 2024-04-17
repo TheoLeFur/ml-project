@@ -55,16 +55,15 @@ def main(args):
     ## 2. Then we must prepare it. This is were you can create a validation set,
     #  normalize, add bias, etc.
 
-    xtrain = normalize_fn(
-        data=xtrain,
-        means=compute_means(xtrain),
-        stds=compute_std(xtrain)
-    )
-    xtest = normalize_fn(
-        data=xtest,
-        means=compute_means(xtest),
-        stds=compute_std(xtest)
-    )
+    # Normalize the data    
+    means = compute_means(xtrain)
+    stds = compute_std(xtrain)
+    xtrain = normalize_fn(xtrain, means, stds)
+    xtest = normalize_fn(xtest, means, stds)
+
+    # Add bias term
+    # xtrain = append_bias_term(xtrain) # some other modifications required elsewhere
+    # xtest = append_bias_term(xtest)
 
     # Make a validation set (it can overwrite xtest, ytest)
     if not args.test:
