@@ -44,13 +44,13 @@ class LinearRegression(BaseModel):
         reg_matrix[-1, -1] = 0  # Do not regularize the bias term
 
         # Closed-form solution for weight calculation
-        self.weights = np.linalg.inv(training_data_bias.T @ training_data_bias + reg_matrix) @ training_data_bias.T @ training_labels
+        self.weights = np.linalg.inv(
+            training_data_bias.T @ training_data_bias + reg_matrix) @ training_data_bias.T @ training_labels
         print(self.weights)
         print(self.weights.shape)
         # Return predictions for the training data to verify the fit
         pred_regression_targets = training_data_bias.dot(self.weights)
         return pred_regression_targets
-        
 
     def predict(self, test_data):
         """
@@ -61,12 +61,10 @@ class LinearRegression(BaseModel):
             Returns:
                 test_labels (np.array): labels of shape (N,regression_target_size)
         """
-       # Append a bias term to the test data
+        # Append a bias term to the test data
         test_data_bias = append_bias_term(test_data)
 
         # Predict using the learned weights
         pred_regression_targets = test_data_bias.dot(self.weights)
 
         return pred_regression_targets
-    
-        

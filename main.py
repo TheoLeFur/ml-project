@@ -170,11 +170,13 @@ def main(args):
 
             print(f"Test set:  accuracy = {acc:.3f}% - F1-score = {macrof1:.6f}")
             PlotLib.plot_loss_against_hyperparam_val(params_list, train_losses)
+            
         else:
 
             method_obj.fit(xtrain, ytrain)
-            train_accuracy, logs = method_obj.predict_with_cv(train_data=xtrain, train_labels=ytrain, n_folds=args.n_folds,
-                                                        criterion=accuracy_fn, metrics=metrics)
+            train_accuracy, logs = method_obj.predict_with_cv(train_data=xtrain, train_labels=ytrain,
+                                                              n_folds=args.n_folds,
+                                                              criterion=accuracy_fn, metrics=metrics)
 
             method_obj.fit(xtrain, ytrain)
             test_labels = method_obj.predict(xtest)
