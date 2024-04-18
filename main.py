@@ -69,7 +69,8 @@ def main(args):
 
     elif args.method == "knn":
 
-        method_obj = KNN(args.K, task_kind=task_name_to_task_type[args.task], weights_type=args.weights_type)
+        method_obj = KNN(args.K, task_kind=task_name_to_task_type[args.task], weights_type=args.weights_type,
+                         metric_learning="nca", metric_learning_params={"n_dims":2})
 
         if args.n_params > 1:
             ks: np.ndarray = np.arange(args.Kmin, args.Kmax, 1)
@@ -164,7 +165,7 @@ def main(args):
                                                               n_folds=args.n_folds,
                                                               criterion=accuracy_fn, metrics=metrics)
 
-            method_obj.fit(xtrain, ytrain)
+            # method_obj.fit(xtrain, ytrain)
             test_labels = method_obj.predict(xtest)
             test_acccuracy = accuracy_fn(test_labels, ytest)
             test_f1_score = macrof1_fn(test_labels, ytest)

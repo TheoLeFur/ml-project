@@ -2,6 +2,7 @@ import numpy as np
 from typing import Optional, Tuple, Any
 
 from tqdm import tqdm
+import torch
 
 
 class NeighborhoodComponentAnalysis:
@@ -14,7 +15,8 @@ class NeighborhoodComponentAnalysis:
             tol: Optional[float] = 1e-5
     ):
         """
-        
+        Simple implementation of neighborhood component analysis. Ref: https://www.cs.toronto.edu/~hinton/absps/nca.pdf.
+
         Args:
             n_dims:
             learning_rate:
@@ -38,8 +40,8 @@ class NeighborhoodComponentAnalysis:
         """
 
         Args:
-            training_data:
-            training_labels:
+            training_data: array of shape (N,D)
+            training_labels: array of shape (N,)
 
         Returns:
 
@@ -47,98 +49,77 @@ class NeighborhoodComponentAnalysis:
         n_samples, n_features = training_data.shape
         self.training_data = training_data
         self.training_labels = training_labels
-        self.W: np.ndarray = np.random.randn(n_features, self.n_dims)
+        self.W = np.random.randn(n_features, self.n_dims)
 
         loss_hist = []
-
+        outer = np.einsum(
+            'ac,bd->abcd',
+            training_data,
+            training_data
+        )
         for _ in tqdm(range(self.max_iter)):
-            probabilities: np.ndarray = self._compute_probabilities(training_data)
-            classification_probabilities: np.ndarray = self._compute_classification_probabilities(
-                probabilities,
-                training_data,
-                training_labels)
+            probs = self._compute_probabilities(training_data)
+            class_probs = self._compute_classification_probabilities(probs, training_labels)
+            loss = np.sum(np.log(class_probs))
 
-            loss: float = np.log(classification_probabilities).sum()
+            mask = (training_labels[:, None] == training_labels[None, :])
+            masked_probs = probs * mask
+            grad_loss = 2 * ((probs[:, :, np.newaxis, np.newaxis] -
+                              masked_probs[:, :, np.newaxis, np.newaxis]) * outer).sum(axis=(0, 1)) @ self.W
 
-            outer: np.ndarray = np.einsum(
-                'ac,bd->abcd',
-                training_data,
-                training_data
-            )
-
-            grad_loss: np.ndarray = (probabilities[:, :, np.newaxis, np.newaxis] * outer).sum(axis=(0, 1))
-
-            for i in range(training_data.shape[0]):
-                class_indices: np.ndarray = self.get_class_indices(i, training_data, training_labels)
-                outer_same_class: np.ndarray = outer[i, class_indices, :, :].squeeze(axis=0)
-                sum: np.ndarray = np.multiply(probabilities[np.newaxis, i, class_indices], outer_same_class).squeeze()
-                grad_loss -= sum / classification_probabilities[i]
-            loss_hist.append(loss)
-            grad_loss = 2 * grad_loss * self.W
             self.W += self.learning_rate * grad_loss
+            loss_hist.append(loss)
+            print(f"Loss value: {loss}")
 
-            print(f"Loss value: {loss} \n")
-
-    def _compute_probabilities(self, training_data) -> np.ndarray:
+    def _compute_probabilities(self, training_data: np.ndarray) -> np.ndarray:
         """
 
         Args:
-            training_data:
-            training_labels:
+            training_data: array of shape (N,D)
+            training_labels: array of shape (N,)
 
         Returns:
 
         """
 
-        transformed_data: np.ndarray = np.dot(training_data, self.W)
-        differences: np.ndarray = transformed_data[:, np.newaxis, :] - transformed_data[np.newaxis, :, :]
-        distances: np.ndarray = np.exp(-np.sum(differences ** 2, axis=2))
-        row_sums: np.ndarray = np.sum(distances, axis=1)
-        res: np.ndarray = distances / row_sums[:, np.newaxis]
+        transformed_data = training_data @ self.W
 
-        return res
+        distances = self.pairwise_distances(transformed_data)
+        res = np.exp(-distances)
+        norm = np.sum(res, axis=1)
+        return res / norm
 
     def _compute_classification_probabilities(
             self,
             probabilities: np.ndarray,
-            training_data: np.ndarray,
             training_labels: np.ndarray) -> np.ndarray:
         """
 
         Args:
-            probabilities:
-            training_data:
-            training_labels:
+            probabilities: Matrix of shape (N, N), where M[i,j] represents the probability of point i being classified as
+            point j
+            training_labels: array of shape (N,)
 
         Returns:
 
         """
 
-        N: int = training_data.shape[0]
-        classification_probabilities: np.ndarray = np.zeros(N)
-
-        for i in range(N):
-            prob = probabilities[i, :]
-            same_class_indices = self.get_class_indices(i, training_data, training_labels)
-            classification_probabilities[i] = np.sum(prob[same_class_indices])
+        mask = (training_labels[:, None] == training_labels[None, :])
+        classification_probabilities = np.sum((probabilities * mask), axis=1)
 
         return classification_probabilities
 
-    def get_class_indices(self, i, training_data: np.ndarray, training_labels: np.ndarray) -> np.ndarray | float:
+    def pairwise_distances(self, training_data: np.ndarray) -> np.ndarray:
         """
 
         Args:
-            i:
-            training_data:
-            training_labels:
+            training_data: array of shape (N,D)
 
         Returns:
 
         """
-        if i < 0 or i >= training_data.shape[0]:
-            raise IndexError("Index out of range")
-
-        element_class = training_labels[i]
-        same_class_indices = np.where(training_labels == element_class)
-
-        return same_class_indices
+        dot = np.matmul(training_data, training_data.T)
+        norm_sq = np.diag(dot)
+        dist = norm_sq[None, :] - 2 * dot + norm_sq[:, None]
+        dist = np.clip(dist, a_min=0, a_max=None)
+        return dist

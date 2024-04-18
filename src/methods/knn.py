@@ -5,6 +5,7 @@ from typing import Dict, Callable
 
 from src.methods.base_model import BaseModel
 from dataclasses import dataclass
+from src.methods.neighborhood_component_analysis import NeighborhoodComponentAnalysis
 
 EPSILON = 1e-12
 
@@ -25,7 +26,9 @@ class KNN(BaseModel):
             self,
             k: Optional[int] = 1,
             task_kind: Optional[str] = "classification",
-            weights_type: Optional[str] = None
+            weights_type: Optional[str] = None,
+            metric_learning: Optional[str] = None,
+            metric_learning_params: Dict = None
     ):
         """
 
@@ -43,6 +46,12 @@ class KNN(BaseModel):
             self.weights_type = weights_type
         else:
             self.weights_type = "uniform"
+
+        self.metric_learning = metric_learning
+        if metric_learning is not None and task_kind == "classification":
+            if metric_learning == "nca":
+                assert metric_learning_params is not None
+                self.nca = NeighborhoodComponentAnalysis(**metric_learning_params)
 
     def fit(self, training_data, training_labels):
         """
@@ -62,6 +71,13 @@ class KNN(BaseModel):
 
         self.training_data: np.ndarray = training_data
         self.training_labels: np.ndarray = training_labels
+
+        if self.metric_learning == "nca":
+            self.nca.fit(
+                training_data,
+                training_labels
+            )
+            self.W = self.nca.W
 
         return self.predict(training_data)
 
@@ -83,20 +99,21 @@ class KNN(BaseModel):
 
         for i in tqdm(range(n_test)):
 
-            distances: np.ndarray = np.sqrt(np.sum(np.square(self.training_data - test_data[i]), axis=1))
+            distances: np.ndarray = self._compute_distances(i, test_data)
+
             k_nearest_indices: np.ndarray = distances.argsort()[:self.k]
             nearest_k_labels: np.ndarray = self.training_labels[k_nearest_indices]
 
             if self.task_kind == "classification":
-                label: np.ndarray = self.compute_classification_label(nearest_k_labels)
+                label: np.ndarray = self._compute_classification_label(nearest_k_labels)
             elif self.task_kind == "regression":
 
                 if self.weights_type == "inverse_distance":
                     nearest_k_distances: np.ndarray = distances[k_nearest_indices]
                     kwargs: Dict = {"distances": nearest_k_distances}
-                    label: np.ndarray = self.compute_regression_label(nearest_k_labels, **kwargs)
+                    label: np.ndarray = self._compute_regression_label(nearest_k_labels, **kwargs)
                 elif self.weights_type == "uniform":
-                    label: np.ndarray = self.compute_regression_label(nearest_k_labels)
+                    label: np.ndarray = self._compute_regression_label(nearest_k_labels)
                 else:
                     raise NotImplementedError
 
@@ -106,7 +123,25 @@ class KNN(BaseModel):
             test_labels = np.vstack([test_labels, label])
         return np.squeeze(test_labels)
 
-    def compute_classification_label(self, k_nearest_labels: np.ndarray) -> np.ndarray:
+    def _compute_distances(self, index, test_data: np.ndarray, *args) -> np.ndarray:
+        """
+
+        Args:
+            index:
+            test_data:
+
+        Returns:
+
+        """
+
+        if self.metric_learning == "nca":
+            Q = self.W.T @ self.W
+            dist = np.einsum('ij,ij->i', test_data @ Q, test_data)
+            return dist
+        else:
+            return np.sqrt(np.sum(np.square(self.training_data - test_data[index]), axis=1))
+
+    def _compute_classification_label(self, k_nearest_labels: np.ndarray) -> np.ndarray:
         """
 
         Args:
@@ -117,7 +152,7 @@ class KNN(BaseModel):
         """
         return np.argmax(np.bincount(k_nearest_labels)).reshape(-1, 1)
 
-    def compute_regression_label(self, k_nearest_labels: np.ndarray, **kwargs) -> np.ndarray:
+    def _compute_regression_label(self, k_nearest_labels: np.ndarray, **kwargs) -> np.ndarray:
         """
         Args:
             k_nearest_labels: Array that contains the k nearest labels of a given point
