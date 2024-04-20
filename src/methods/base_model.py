@@ -20,10 +20,17 @@ class BaseModel(metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
-    def set_hyperparameters(self, params: "Hyperparameters"):
+    def set_hyperparameters(self, params: "Hyperparameters") -> None:
+        """
+
+        Args:
+            params: Instance of Hyperparameters class containing the hyperparameters to tune on
+
+        Returns: None
+
+        """
         raise NotImplementedError
 
-    # TODO: make all methods accept other types of metrics. Pass the functions into a dictionary.
     def predict_and_tune(
             self,
             train_data: np.ndarray,
@@ -38,15 +45,14 @@ class BaseModel(metaclass=ABCMeta):
         """
 
         Args:
-            metrics:
-            n_folds:
-            ground_truth_train_labels:
-            train_data:
-            params:
-            eval_criterion: The criterion should induce the inverse order of maximality: criterion(x) < criterion(y)
-            => y > x.
+            train_data: Training data, of shape (N, D), where D is the number of featueres
+            ground_truth_train_labels: Labels of shape (N, C), where C is the number of label features
+            params: List of hyperparameters to evaluate on the model
+            eval_criterion: Evaluation criterion used for the model. Used for determining the best hyperparameters
+            metrics: Additional metrics one may want to use for evaluating the model. Defaulted to None.
+            n_folds: Number of folds to use in cross-validation
 
-        Returns:
+        Returns: Loss for each hyperparameter value, the best hyperparameters, the best loss and the metrics.
 
         """
         min_value_train: float = np.Inf
@@ -55,11 +61,19 @@ class BaseModel(metaclass=ABCMeta):
         train_losses: List = []
 
         for param in params:
+
             self.set_hyperparameters(param)
 
-            train_loss, logs = self.predict_with_cv(train_data=train_data, train_labels=ground_truth_train_labels,
-                                                    n_folds=n_folds, criterion=eval_criterion, metrics=metrics)
+            train_loss, logs = self.predict_with_cv(
+                train_data=train_data,
+                train_labels=ground_truth_train_labels,
+                n_folds=n_folds,
+                criterion=eval_criterion,
+                metrics=metrics
+            )
+
             train_losses.append(train_loss)
+
             if train_loss < min_value_train:
                 best_logs = copy.deepcopy(logs)
                 min_value_train = train_loss
@@ -84,20 +98,19 @@ class BaseModel(metaclass=ABCMeta):
             criterion: Main criterion that will be used to perform hyperparameter selection
             train_data: training data, of shape (N,D)
             train_labels: training labels, of shape (N, C), where C is the number of features in labels
-            n_folds: Number of folds to apply in CV
+            n_folds: Number of folds to apply in cross-validation
 
-        Returns:
+        Returns: loss after cross-validation, other metrics
 
         """
 
         logs: Dict = {}
-
         if n_folds == 1:
+            self.fit(train_data, train_labels)
 
             if metrics is not None:
                 for key in metrics.keys():
                     logs[key] = 0
-
             train_labels_pred = self.predict(train_data)
             acc = criterion(train_labels_pred, train_labels)
 
@@ -149,6 +162,13 @@ class BaseModel(metaclass=ABCMeta):
 
     @staticmethod
     def reduce_mean(hashmap: Dict[str, np.ndarray]) -> Dict[str, float]:
+        """
+        Args:
+            hashmap: A dictionary of the form (str, np.ndarray)
+
+        Returns: A dictionary of the form (str, float), where the array has been reduced by averaging
+
+        """
         reduced: Dict[str, float] = {}
         if len(hashmap) > 0:
             for key in hashmap.keys():

@@ -30,15 +30,12 @@ def main(args):
         args (Namespace): arguments that were parsed from the command line (see at the end 
                           of this file). Their value can be accessed as "args.argument".
     """
-    ## 1. First, we load our data and flatten the images into vectors
 
     ##EXTRACTED FEATURES DATASET
     if args.data_type == "features":
         feature_data = np.load('data/ms1/features.npz', allow_pickle=True)
-        print(feature_data)
         xtrain, xtest, ytrain, ytest, ctrain, ctest = feature_data['xtrain'], feature_data['xtest'], \
             feature_data['ytrain'], feature_data['ytest'], feature_data['ctrain'], feature_data['ctest']
-        print(xtrain.shape, xtest.shape, ctrain.shape, ctest.shape)
 
     ##ORIGINAL IMAGE DATASET (MS2)
     elif args.data_type == "original":
@@ -48,13 +45,6 @@ def main(args):
     else:
         raise NotImplementedError
 
-    ##TODO: ctrain and ctest are for regression task. (To be used for Linear Regression and KNN)
-    ##TODO: xtrain, xtest, ytrain, ytest are for classification task. (To be used for Logistic Regression and KNN)
-
-    ## 2. Then we must prepare it. This is were you can create a validation set,
-    #  normalize, add bias, etc.
-
-    # Normalize the data    
     means = compute_means(xtrain)
     stds = compute_std(xtrain)
     xtrain = normalize_fn(xtrain, means, stds)
@@ -69,10 +59,6 @@ def main(args):
         ### WRITE YOUR CODE HERE
         pass
 
-    ### WRITE YOUR CODE HERE to do any other data processing
-
-    ## 3. Initialize the method you want to use.
-
     # Use NN (FOR MS2!)
     if args.method == "nn":
         raise NotImplementedError("This will be useful for MS2.")
@@ -83,7 +69,8 @@ def main(args):
 
     elif args.method == "knn":
 
-        method_obj = KNN(args.K, task_kind=task_name_to_task_type[args.task], weights_type="inverse_distance")
+        method_obj = KNN(args.K, task_kind=task_name_to_task_type[args.task], weights_type=args.weights_type,
+                         metric_learning="nca", metric_learning_params={"n_dims":2})
 
         if args.n_params > 1:
             ks: np.ndarray = np.arange(args.Kmin, args.Kmax, 1)
@@ -108,9 +95,8 @@ def main(args):
             for lmda in lambdas:
                 params_list.append(LinearRegression.LRHyperparameters(lmda))
     else:
-        raise NotImplementedError
+        raise NotImplementedError(f"Method {args.method} not implemented")
 
-    ## 4. Train and evaluate the method
     if args.task == "center_locating":
         if args.n_params > 1:
             # Fit parameters on training data
@@ -124,6 +110,8 @@ def main(args):
             PlotLib.plot_loss_against_hyperparam_val(params_list, train_losses)
 
             # Evaluation on test set
+            print(f"The best hyperparameters are {best_params}")
+
             method_obj.set_hyperparameters(best_params)
             method_obj.fit(xtrain, ctrain)
             test_labels = method_obj.predict(xtest)
@@ -132,7 +120,6 @@ def main(args):
             print(f"\nTrain loss = {best_train_loss:.3f}% - Test loss = {best_test_loss:.3f}")
         else:
 
-            method_obj.fit(xtrain, ctrain)
             train_loss, _ = method_obj.predict_with_cv(train_data=xtrain, train_labels=ctrain, n_folds=args.n_folds,
                                                        criterion=mse_fn)
             method_obj.fit(xtrain, ctrain)
@@ -147,6 +134,7 @@ def main(args):
 
         metrics = {"macro-f1": macrof1_fn}
         if args.n_params > 1:
+
             train_losses, best_params, best_train_loss, logs = method_obj.predict_and_tune(
                 xtrain,
                 ytrain,
@@ -159,6 +147,7 @@ def main(args):
             macrof1 = logs["macro-f1"]
 
             print(f"\nTrain set: accuracy = {-best_train_loss:.3f}% -F1 = {macrof1:.6f}")
+            print(f"The best hyperparameters are {best_params}")
 
             method_obj.set_hyperparameters(best_params)
             method_obj.fit(xtrain, ytrain)
@@ -172,18 +161,16 @@ def main(args):
 
         else:
 
-            method_obj.fit(xtrain, ytrain)
             train_accuracy, logs = method_obj.predict_with_cv(train_data=xtrain, train_labels=ytrain,
                                                               n_folds=args.n_folds,
                                                               criterion=accuracy_fn, metrics=metrics)
 
-            method_obj.fit(xtrain, ytrain)
+            # method_obj.fit(xtrain, ytrain)
             test_labels = method_obj.predict(xtest)
             test_acccuracy = accuracy_fn(test_labels, ytest)
             test_f1_score = macrof1_fn(test_labels, ytest)
             train_f1_score = logs['macro-f1']
 
-            # TODO: find a way to compute f1 score for training labels
             print(f"Train set:  accuracy = {train_accuracy:.3f}% - F1-score = {train_f1_score}.6f")
             print(f"Test set:  accuracy = {test_acccuracy:.3f}% - F1-score = {test_f1_score:.6f}")
 
@@ -211,6 +198,8 @@ if __name__ == '__main__':
     parser.add_argument('--data_type', default="features", type=str, help="features/original(MS2)")
     parser.add_argument('--lmda', type=float, default=10, help="lambda of linear/ridge regression")
     parser.add_argument('--K', type=int, default=1, help="number of neighboring datapoints used for knn")
+    parser.add_argument('--weights_type', type=str, default='uniform',
+                        help='type of weights to use for weighted KNN. Uniform and inverse distance are supported')
     parser.add_argument('--lr', type=float, default=1e-5, help="learning rate for methods with learning rate")
     parser.add_argument('--max_iters', type=int, default=100, help="max iters for methods which are iterative")
     parser.add_argument('--test', action="store_true",

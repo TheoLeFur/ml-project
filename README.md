@@ -30,8 +30,26 @@ pip3 install -r requirements.txt
 
 <p>from the<code>ml-project</code> directory</p>
 
+# Running the models
 
+<p> For running the models, from the <code>ml-project</code> directory, run the scripts</p>
 
+```angular2html
+/bin/bash scripts/run_simple.sh
+```
 
+for simple running,
+
+```angular2html
+/bin/bash scripts/run_with_cv.sh
+```
+
+for cross-validation,
+
+```angular2html
+/bin/bash scripts/run_with_cv_and_tune.sh
+```
+
+for cross-validation and parameters tuning. Make sure to replace the default arguments with desired values. 
 
 

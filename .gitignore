@@ -1,5 +1,5 @@
-.npz*
-.xml*
-.pyc*
-src/__pycache__/
-src/methods/__pycache__/
+*.npz
+*.xml
+*.pyc
+.idea/
+*.DS_Store

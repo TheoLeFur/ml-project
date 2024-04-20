@@ -75,6 +75,7 @@ class LogisticRegression(BaseModel):
         Returns:
             pred_labels (array): labels of shape (N,)
         """
+
         pred_labels = self._logistic_regression_predict_multi(test_data, self.weights)
         return pred_labels
 
