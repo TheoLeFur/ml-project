@@ -1,3 +1,4 @@
+
 import numpy as np
 import sys
 from ..utils import append_bias_term
@@ -25,7 +26,7 @@ class LinearRegression(BaseModel):
             and call set_arguments function of this class.
         """
         self.lmda = lmda
-        self.weight = None
+        self.weights = None
 
     def fit(self, training_data, training_labels):
         """
@@ -46,9 +47,27 @@ class LinearRegression(BaseModel):
         # Closed-form solution for weight calculation
         self.weights = np.linalg.inv(
             training_data_bias.T @ training_data_bias + reg_matrix) @ training_data_bias.T @ training_labels
-        print(self.weights)
-        print(self.weights.shape)
         # Return predictions for the training data to verify the fit
+        pred_regression_targets = training_data_bias.dot(self.weights)
+        return pred_regression_targets
+
+    def fit_with_gradient_descent(self, training_data, training_labels, learning_rate=0.01, iterations=1000):
+        """
+        Trains the model using gradient descent, returns predicted labels for training data.
+        """
+        training_data_bias = append_bias_term(training_data)
+        n_samples, n_features = training_data_bias.shape
+        n_targets = training_labels.shape[1] if training_labels.ndim > 1 else 1
+    
+        # Initialize weights as a 2D array if training_labels is 2D, else as a 1D array
+        self.weights = np.zeros((n_features, n_targets)) if n_targets > 1 else np.zeros(n_features)
+    
+        for _ in range(iterations):
+            predictions = training_data_bias.dot(self.weights)
+            errors = predictions - training_labels
+            gradients = 2/n_samples * training_data_bias.T.dot(errors) + self.lmda * self.weights
+            self.weights -= learning_rate * gradients
+    
         pred_regression_targets = training_data_bias.dot(self.weights)
         return pred_regression_targets
 
