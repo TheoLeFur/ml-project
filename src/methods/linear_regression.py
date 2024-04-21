@@ -25,13 +25,14 @@ class LinearRegression(BaseModel):
     def set_hyperparameters(self, params: "LRHyperparameters"):
         self.lmda = params.lmda
 
-    def __init__(self, lmda):
+    def __init__(self, lmda, task_kind="regression"):
         """
             Initialize the task_kind (see dummy_methods.py)
             and call set_arguments function of this class.
         """
         self.lmda = lmda
         self.weights = None
+        self.task_kind = task_kind
 
     def fit(self, training_data, training_labels):
         """
