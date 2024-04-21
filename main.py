@@ -68,11 +68,9 @@ def main(args):
         method_obj = DummyClassifier(arg1=1, arg2=2)
 
     elif args.method == "knn":
-        task_kind: str = task_name_to_task_type[args.task]
-        method_obj = KNN(args.K, task_kind=task_kind, weights_type=args.weights_type,
-                         metric_learning=args.metric_learning,
-                         metric_learning_params={'n_dims': args.n_dims}
-                         )
+
+        method_obj = KNN(args.K, task_kind=task_name_to_task_type[args.task], weights_type=args.weights_type,
+                         metric_learning="nca", metric_learning_params={"n_dims":2})
 
         if args.n_params > 1:
             ks: np.ndarray = np.arange(args.Kmin, args.Kmax, 1)
@@ -81,6 +79,7 @@ def main(args):
                 params_list.append(KNN.KNNHyperparameters(k=k))
 
     elif args.method == "logistic_regression":
+
         method_obj = LogisticRegression(lr=args.lr, max_iters=args.max_iters)
         if args.n_params > 1:
             lrs = np.linspace(args.lrmin, args.lrmax, args.n_params)
@@ -99,10 +98,12 @@ def main(args):
         raise NotImplementedError(f"Method {args.method} not implemented")
 
     if args.task == "center_locating":
+        xtrain_biased = append_bias_term(xtrain)
+        xtest_biased = append_bias_term(xtest)
         if args.n_params > 1:
             # Fit parameters on training data
             train_losses, best_params, best_train_loss, _ = method_obj.predict_and_tune(
-                xtrain,
+                xtrain_biased,
                 ctrain,
                 params_list,
                 mse_fn,
@@ -114,17 +115,16 @@ def main(args):
             print(f"The best hyperparameters are {best_params}")
 
             method_obj.set_hyperparameters(best_params)
-            method_obj.fit(xtrain, ctrain)
-            test_labels = method_obj.predict(xtest)
+            method_obj.fit(xtrain_biased, ctrain)
+            test_labels = method_obj.predict(xtest_biased)
             best_test_loss = mse_fn(test_labels, ctest)
 
             print(f"\nTrain loss = {best_train_loss:.3f}% - Test loss = {best_test_loss:.3f}")
         else:
-
-            train_loss, _ = method_obj.predict_with_cv(train_data=xtrain, train_labels=ctrain, n_folds=args.n_folds,
+            train_loss, _ = method_obj.predict_with_cv(train_data=xtrain_biased, train_labels=ctrain, n_folds=args.n_folds,
                                                        criterion=mse_fn)
-            method_obj.fit(xtrain, ctrain)
-            test_labels = method_obj.predict(xtest)
+            method_obj.fit(xtrain_biased, ctrain)
+            test_labels = method_obj.predict(xtest_biased)
             test_loss = mse_fn(test_labels, ctest)
 
             print(f"\nTrain loss = {train_loss:.3f}% - Test loss = {test_loss:.3f}")
@@ -147,6 +147,8 @@ def main(args):
 
             macrof1 = logs["macro-f1"]
 
+            print(f"\nTrain set: accuracy = {-best_train_loss:.3f}% -F1 = {macrof1:.6f}")
+            print(f"The best hyperparameters are {best_params}")
 
             method_obj.set_hyperparameters(best_params)
             method_obj.fit(xtrain, ytrain)
@@ -155,8 +157,6 @@ def main(args):
             acc = accuracy_fn(preds, ytest)
             macrof1 = macrof1_fn(preds, ytest)
 
-            print(f"\nTrain set: accuracy = {-best_train_loss:.3f}% -F1 = {macrof1:.6f}")
-            print(f"The best hyperparameters are {best_params}")
             print(f"Test set:  accuracy = {acc:.3f}% - F1-score = {macrof1:.6f}")
             PlotLib.plot_loss_against_hyperparam_val(params_list, train_losses)
 
@@ -181,11 +181,11 @@ def main(args):
 
     ### WRITE YOUR CODE HERE if you want to add other outputs, visualization, etc.
 
-    # data = xtrain
-    # # Plot feature values:
-    # PlotLib.plot_feature_values(data)
-    # # Plot feature distribution
-    # PlotLib.plot_feature_distribution(data)
+    data = xtrain 
+    # Plot feature values:
+    PlotLib.plot_feature_values(data)
+    # Plot feature distribution
+    PlotLib.plot_feature_distribution(data)
 
 
 if __name__ == '__main__':
@@ -201,11 +201,6 @@ if __name__ == '__main__':
     parser.add_argument('--K', type=int, default=1, help="number of neighboring datapoints used for knn")
     parser.add_argument('--weights_type', type=str, default='uniform',
                         help='type of weights to use for weighted KNN. Uniform and inverse distance are supported')
-    parser.add_argument('--metric_learning', type=str, default=None,
-                        help='Metric learning algorithm for KNN, defaulted to None')
-    parser.add_argument('--n_dims', type=int, default=1,
-                        help="Number of features to use in the Mahalanobis distance matrix in NCA"
-                             "")
     parser.add_argument('--lr', type=float, default=1e-5, help="learning rate for methods with learning rate")
     parser.add_argument('--max_iters', type=int, default=100, help="max iters for methods which are iterative")
     parser.add_argument('--test', action="store_true",

@@ -42,38 +42,34 @@ class LinearRegression(BaseModel):
             Returns:
                 pred_labels (np.array): target of shape (N,regression_target_size)
         """
-        # Append a bias term to the training data
-        training_data_bias = append_bias_term(training_data)
-
         # Regularization matrix, excluding the bias term from regularization
-        reg_matrix = self.lmda * np.eye(training_data_bias.shape[1])
+        reg_matrix = self.lmda * np.eye(training_data.shape[1])
         reg_matrix[-1, -1] = 0  # Do not regularize the bias term
 
         # Closed-form solution for weight calculation
         self.weights = np.linalg.inv(
-            training_data_bias.T @ training_data_bias + reg_matrix) @ training_data_bias.T @ training_labels
+            training_data.T @ training_data + reg_matrix) @ training_data.T @ training_labels
         # Return predictions for the training data to verify the fit
-        pred_regression_targets = training_data_bias.dot(self.weights)
+        pred_regression_targets = training_data.dot(self.weights)
         return pred_regression_targets
 
     def fit_with_gradient_descent(self, training_data, training_labels, learning_rate=0.01, iterations=1000):
         """
         Trains the model using gradient descent, returns predicted labels for training data.
         """
-        training_data_bias = append_bias_term(training_data)
-        n_samples, n_features = training_data_bias.shape
+        n_samples, n_features = training_data.shape
         n_targets = training_labels.shape[1] if training_labels.ndim > 1 else 1
     
         # Initialize weights as a 2D array if training_labels is 2D, else as a 1D array
         self.weights = np.zeros((n_features, n_targets)) if n_targets > 1 else np.zeros(n_features)
     
         for _ in range(iterations):
-            predictions = training_data_bias.dot(self.weights)
+            predictions = training_data.dot(self.weights)
             errors = predictions - training_labels
-            gradients = 2/n_samples * training_data_bias.T.dot(errors) + self.lmda * self.weights
+            gradients = 2/n_samples * training_data.T.dot(errors) + self.lmda * self.weights
             self.weights -= learning_rate * gradients
     
-        pred_regression_targets = training_data_bias.dot(self.weights)
+        pred_regression_targets = training_data.dot(self.weights)
         return pred_regression_targets
 
     def predict(self, test_data):
@@ -85,10 +81,7 @@ class LinearRegression(BaseModel):
             Returns:
                 test_labels (np.array): labels of shape (N,regression_target_size)
         """
-        # Append a bias term to the test data
-        test_data_bias = append_bias_term(test_data)
-
         # Predict using the learned weights
-        pred_regression_targets = test_data_bias.dot(self.weights)
+        pred_regression_targets = test_data.dot(self.weights)
 
         return pred_regression_targets
