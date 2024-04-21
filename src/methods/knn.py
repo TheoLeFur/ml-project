@@ -1,10 +1,11 @@
+from dataclasses import dataclass
+from typing import Dict
+from typing import Optional
+
 import numpy as np
-from typing import Optional, List, Tuple
 from tqdm import tqdm
-from typing import Dict, Callable
 
 from src.methods.base_model import BaseModel
-from dataclasses import dataclass
 from src.methods.neighborhood_component_analysis import NeighborhoodComponentAnalysis
 
 EPSILON = 1e-12
@@ -127,16 +128,18 @@ class KNN(BaseModel):
         """
 
         Args:
-            index:
-            test_data:
+            index: index of the element in the test data we compute the distances for
+            test_data: test data
 
-        Returns:
+        Returns: array of distances between the element corresponding to index and the training data
 
         """
 
         if self.metric_learning == "nca":
-            Q = self.W.T @ self.W
-            dist = np.einsum('ij,ij->i', test_data @ Q, test_data)
+            Q = self.W @ self.W.T
+            dist = (self.training_data - test_data[index]) @ Q
+            dist = dist * (self.training_data - test_data[index])
+            dist = dist.sum(axis=1)
             return dist
         else:
             return np.sqrt(np.sum(np.square(self.training_data - test_data[index]), axis=1))

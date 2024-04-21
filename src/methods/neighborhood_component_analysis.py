@@ -1,8 +1,11 @@
-import numpy as np
-from typing import Optional, Tuple, Any
+from typing import Optional
 
+import numpy as np
 from tqdm import tqdm
-import torch
+
+
+class ModelNotFitError(Exception):
+    pass
 
 
 class NeighborhoodComponentAnalysis:
@@ -11,8 +14,9 @@ class NeighborhoodComponentAnalysis:
             self,
             n_dims: int,
             learning_rate: Optional[float] = 1e-3,
-            max_iter: Optional[int] = 500,
-            tol: Optional[float] = 1e-5
+            max_iter: Optional[int] = 100,
+            tol: Optional[float] = 1e-5,
+            batch_size=128
     ):
         """
         Simple implementation of neighborhood component analysis. Ref: https://www.cs.toronto.edu/~hinton/absps/nca.pdf.
@@ -31,6 +35,17 @@ class NeighborhoodComponentAnalysis:
         self.learning_rate = learning_rate
         self.max_iter = max_iter
         self.tol = tol
+        self.batch_size = batch_size
+
+    @property
+    def transformation_matrix(self):
+        if self.W is None:
+            raise ModelNotFitError
+        return self.W
+
+    @property
+    def n_components(self):
+        return self.n_dims
 
     def fit(
             self,
@@ -58,6 +73,12 @@ class NeighborhoodComponentAnalysis:
             training_data
         )
         for _ in tqdm(range(self.max_iter)):
+            # For stochastic gradient descent
+            idx = np.random.randint(0, training_data.shape[0], self.batch_size)
+            training_data = training_data[idx]
+            training_labels = training_labels[idx]
+            outer = outer[idx, :, :, :][:, idx, :, :]
+
             probs = self._compute_probabilities(training_data)
             class_probs = self._compute_classification_probabilities(probs, training_labels)
             loss = np.sum(np.log(class_probs))

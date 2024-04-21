@@ -1,8 +1,9 @@
-import numpy as np
-import sys
-from ..utils import append_bias_term
-from src.methods.base_model import BaseModel
 from dataclasses import dataclass
+
+import numpy as np
+
+from src.methods.base_model import BaseModel
+from ..utils import append_bias_term
 
 
 class LinearRegression(BaseModel):

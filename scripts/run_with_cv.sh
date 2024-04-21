@@ -1,6 +1,6 @@
 #!/bin/bash
 
-python main.py \
+python ../main.py \
     --task center_locating \
     --method dummy_classifier \
     --data_path /path/to/your/dataset \

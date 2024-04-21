@@ -2,7 +2,7 @@
 
 python main.py \
     --task center_locating \
-    --method dummy_classifier \
+    --method knn \
     --data_path /path/to/your/dataset \
     --data_type features \
     --lmda 10 \
